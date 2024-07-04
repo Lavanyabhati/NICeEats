@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>OTP Authentication</title>
+</head>
+<body>
+    <h1>OTP Authentication</h1>
+    <form method="post" name="OTPForm">
+        <label for="mobile_number">Mobile Number:</label>
+        <input type="text" name="mobile_number" id="mobile_number" required maxlength="10">
+        <br>
+        <label for="action">Action:</label>
+        <select name="action" id="action" required>
+            <option value="generate">Generate OTP</option>
+            <option value="verify">Verify OTP</option>
+            <option value="resend">Resend OTP</option>
+        </select>
+        <br>
+        <input type="submit" value="Submit">
+    </form>
+    <p id="message"></p>  <script>
+        const messageEl = document.getElementById('message');
+
+        function displayMessage(message) {
+            messageEl.textContent = message;
+        }
+    </script>
+</body>
+</html>

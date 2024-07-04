@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Restaurant Details</title>
+</head>
+<body>
+    <h1>Restaurant Details</h1>
+    <p>Name: {{ restaurant.name }}</p>
+    <p>Location: {{ restaurant.location }}</p>
+    <p>Coordinates: {{ restaurant.coordinates }}</p>
+    <a href="{% url 'register_edit' restaurant._id %}">Edit</a>
+    <a href="{% url 'register_delete' restaurant._id %}">Delete</a>
+    <a href="{% url 'register_list' %}">Back to Restaurant List</a>
+</body>
+</html>

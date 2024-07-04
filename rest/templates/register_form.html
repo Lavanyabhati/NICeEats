@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add/Edit Restaurant</title>
+</head>
+<body>
+    <h1>{{ view.form.instance.pk|yesno:"Edit Restaurant,Add Restaurant" }}</h1>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Save</button>
+    </form>
+    <a href="{% url 'register_list' %}">Back to Restaurant List</a>
+</body>
+</html>
