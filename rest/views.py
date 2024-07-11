@@ -280,6 +280,30 @@ def delete_res(request, *args, **kwargs):
 
 
 @csrf_exempt
+@require_http_methods(["GET"])
+@verify_auth_token
+def get_res(request, *args, **kwargs):
+    EVENT = "GetResDetails"
+    IP = client_ip(request)
+    LOG_PREFIX = f'"EventName":"{EVENT}", "IP":"{IP}"'
+    cls_register = Restaurant()
+    try:
+        unique_id = kwargs.get('unique_id')
+        log.info("UNIQUE ID :%s" % unique_id)
+        res_details = cls_register._detail(unique_id)
+        log.info("GET RES DETAILS :%s" %res_details)
+
+        if res_details:
+            return JsonResponse({"status": "SUCCESS", "statuscode": 200, "msg": "Restaurant details "})
+    except Exception as e:
+        log.error(f'{LOG_PREFIX}, "Result":"Failure", "Reason":"{e}"')
+        return JsonResponse({"status": "FAILURE", "statuscode": 500, "msg": "Internal Server Error!"})
+
+
+
+
+
+@csrf_exempt
 @require_http_methods(["POST"])
 @verify_auth_token
 def add_item(request, *args, **kwargs):

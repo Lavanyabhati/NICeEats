@@ -8,7 +8,7 @@ from configuration import *
 
 
 class Restaurant:
-    def __init__(self):
+    def q__init__(self):
         self.db = DBOperation(DB_NAME)
         self.db_res = DBOperation(COLLECTION_PROFILE_RESTAURANT)
         self.db_res_owner = DBOperation(COLLECTION_PROFILE_RESTAURANT_OWNER)
@@ -145,6 +145,23 @@ class Restaurant:
         except Exception as e:
             log.error(f'{LOG_PREFIX}, "Result":"Failure", "Reason":"{e}"')
             return {"status": "FAILURE", "message": "Error updating owner details"}
+
+    def _detail(self, id):
+        log.info("DB RES -------------------------------- %s" %self.db_res.coll_name)
+        return self.db_res
+
+    def _get_restaurant_detail(self, LOG_PREFIX, unique_id):
+        try:
+            data_dict = {
+                'unique_id': unique_id,
+            }
+            log.info("DBRES ::: %s" %self.db_res_menu.coll_name)
+            res_details = self.db_res._find_one(data_dict)
+            return res_details
+
+        except Exception as e:
+            log.error(f'{LOG_PREFIX}, "Result":"Failure", "Reason":"{e}"')
+            return None
 
     def _list(self, LOG_PREFIX, data):
         try:
