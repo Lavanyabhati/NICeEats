@@ -3,19 +3,15 @@ from configuration import *
 from helpers.dbhelper import DBOperation
 
 
-class Register:
+class User:
     def __init__(self):
-        # self.db = db_conn()
-        # self.collection = 'profile_user'
-        self.db = DBOperation(COLLECTION_PROFILE)
+        self.db_user = DBOperation(COLLECTION_PROFILE_USER)
 
     def _find(self, LOG_PREFIX, mobile_number):
-        # db = self.db
-        # collection = self.collection
         success = False
         ACTION = "Register._find()"
         try:
-            profile_user = self.db._find_one(
+            profile_user = self.db_user._find_one(
                 filter={'mobile_number': mobile_number}
             )
             if profile_user:
@@ -36,7 +32,7 @@ class Register:
             insert_data = {
                 'mobile_number': mobile_number
             }
-            insert_user = self.db._insert(data=insert_data)
+            insert_user = self.db_user._insert(data=insert_data)
             if insert_user.inserted_id:
                 success = True
                 log.info(
@@ -51,7 +47,7 @@ class Register:
             return success
 
     def _update(self, data, mobile_number):
-        db = self.db
+        db = self.db_user
         collection = self.collection
         try:
             first_name = data.get('first_name')
@@ -83,9 +79,8 @@ class Register:
             return None
 
 
-
     def _delete(self, mobile_number):
-        db = self.db
+        db = self.db_user
         collection = self.collection
         try:
             delete_user = db[collection].delete_one({'mobile_number': mobile_number})

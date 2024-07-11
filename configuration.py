@@ -8,13 +8,16 @@ SECRET_KEY = b'k2p1IAURFRzyxX7wqATNe2oxpmJCW17aG3_V5AvxHgI='
 ACCESS_TOKEN_EXP = 1
 REFRESH_TOKEN_EXP = 7
 TOKEN_SCOPE_USER = 'USER'
-TOKEN_SCOPE_RESTAURENT = 'OWNER'
+TOKEN_SCOPE_RESTAURANT = 'OWNER'
+MIN_TRAVEL_TIME_PER_KM = 7
+MAX_TRAVEL_TIME_PER_KM = 10
+FOOD_PREP_TIME = 20
 ############################################ Static Values End ############################################
 
 
 
 ############################################ Logging Conf Start ############################################
-LOG_FILE_PATH = '/var/log/niceeats.log'
+LOG_FILE_PATH = 'C:/Users/lavan/PythonProjects/NICeEats/niceeats.log'
 log = logging.getLogger('')
 info_handler = logging.FileHandler(LOG_FILE_PATH, encoding='utf-8')
 formatter = logging.Formatter('{"Time":"%(asctime)s", "Level":"%(levelname)s", "File":"%(filename)s", "Line":"%(lineno)d", %(message)s}')
@@ -27,9 +30,16 @@ log.setLevel(logging.INFO)
 ############################################ Database Connection Start ############################################
 DB_HOST = "localhost"
 DB_PORT = 27017
-DB_NAME = "NICeEats"
-COLLECTION_OTP = 'OTP'
-COLLECTION_PROFILE = 'ProfileUser'
+# DB_NAME = "NICeEats"
+DB_NAME = "Restaurant_database"
+COLLECTION_OTP = 'otp'
+COLLECTION_PROFILE_USER = 'profile_user'
+COLLECTION_PROFILE_RESTAURANT = 'restaurant'
+COLLECTION_PROFILE_RESTAURANT_OWNER = 'restaurant_owner'
+COLLECTION_RES_MENU = 'Menu'
+
+
+
 
 def db_conn():
     client = pymongo.MongoClient(DB_HOST, DB_PORT)

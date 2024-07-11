@@ -7,12 +7,12 @@ from django.conf import settings
 from django.views import View
 from django.views.generic import TemplateView, FormView
 from bson import ObjectId
-from .register_views import Register
+from .register_views import User
 from django.contrib.auth.decorators import login_required
 from .forms import *
 from datetime import datetime
 from configuration import *
-from user.register_views import Register
+from user.register_views import User
 
 
 def product_list(request):
