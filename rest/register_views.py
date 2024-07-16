@@ -8,7 +8,7 @@ from configuration import *
 
 
 class Restaurant:
-    def q__init__(self):
+    def __init__(self):
         self.db = DBOperation(DB_NAME)
         self.db_res = DBOperation(COLLECTION_PROFILE_RESTAURANT)
         self.db_res_owner = DBOperation(COLLECTION_PROFILE_RESTAURANT_OWNER)
@@ -146,17 +146,13 @@ class Restaurant:
             log.error(f'{LOG_PREFIX}, "Result":"Failure", "Reason":"{e}"')
             return {"status": "FAILURE", "message": "Error updating owner details"}
 
-    def _detail(self, id):
-        log.info("DB RES -------------------------------- %s" %self.db_res.coll_name)
-        return self.db_res
-
-    def _get_restaurant_detail(self, LOG_PREFIX, unique_id):
+    def _details(self, LOG_PREFIX, unique_id):
         try:
             data_dict = {
                 'unique_id': unique_id,
             }
             log.info("DBRES ::: %s" %self.db_res_menu.coll_name)
-            res_details = self.db_res._find_one(data_dict)
+            res_details = self.db_res._find_one(filter=data_dict)
             return res_details
 
         except Exception as e:
@@ -271,7 +267,7 @@ class Menu:
                 'updated_at': datetime.now(),
             }
 
-            insert_menu_item = self.db_res_menu._insert(data_dict)
+            insert_menu_item = self.db_res_menu._insert(data=data_dict)
             return True if insert_menu_item.inserted_id else False
         except Exception as e:
             logging.error(f'{LOG_PREFIX}, "Result":"Failure", "Reason":"{e}"')
@@ -300,21 +296,31 @@ class Menu:
                 'item_price': item_price,
                 'item_category': item_category,
                 'item_type': item_type,
-                'created_at': datetime.now(),
                 'updated_at': datetime.now(),
             }
-            update_menu_item = self.db_res_menu._update(filter_q=filter_data, update_data=update_data, upsert=True)
+
+            update_menu_item = self.db_res_menu._update(filter_q=filter_data, update_data=update_data, upsert=False)
             return update_menu_item.modified_count > 0
         except Exception as e:
             log.error(f'{LOG_PREFIX}, "Result":"Failure", "Reason":"{e}"')
             return None
 
-    # def _list_items(self, LOG_PREFIX, data):
-
-    def _delete_item(self, LOG_PREFIX, item_id, data):
+    def item_list(self, LOG_PREFIX, unique_id):
         try:
-            item_id = data.get('item_id')
+            query = {
+                'unique_id': unique_id
+            }
+            log.info("QUERY :: %s" % query)
+            items_list = self.db_res_menu._find_all(filter=query, sort_ts=True)
+            log.info("COLLECTION : %s" % self.db_res_menu.coll_name)
+            return items_list
 
+        except Exception as e:
+            logging.error(f'{LOG_PREFIX}, "Result":"Failure", "Reason":"{e}"')
+            return None
+
+    def _delete_item(self, LOG_PREFIX, item_id):
+        try:
             filter_data = {
                 'item_id': item_id
             }
@@ -323,9 +329,9 @@ class Menu:
 
             if item_delete and item_delete.deleted_count > 0:
                 return True
+            else:
+                return False
 
         except Exception as e:
             logging.error(f'{LOG_PREFIX}, "Result":"Failure", "Reason":"{e}"')
             return False
-
-

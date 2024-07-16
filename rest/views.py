@@ -49,8 +49,8 @@ def verify_auth_token(func):
     return wrapper
 
 
-def generate_item_id():
-    return ''.join(random.choices('0123456789ABCDEF', k=16))
+# def generate_item_id():
+#     return ''.join(random.choices('0123456789ABCDEF', k=16))
 
 
 @csrf_exempt
@@ -110,7 +110,7 @@ def register_res_owner(request):
         if not form.is_valid():
             return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": form.errors})
 
-        insert_res_owner = cls_register._add_owner_details(data=post_data)
+        insert_res_owner = cls_register._add_owner_details(LOG_PREFIX, data=post_data)
 
         if insert_res_owner:
             return JsonResponse({"status": "SUCCESS", "statuscode": 200, "msg": "Restaurant registered successfully!"})
@@ -290,17 +290,20 @@ def get_res(request, *args, **kwargs):
     try:
         unique_id = kwargs.get('unique_id')
         log.info("UNIQUE ID :%s" % unique_id)
-        res_details = cls_register._detail(unique_id)
-        log.info("GET RES DETAILS :%s" %res_details)
+        res_details = cls_register._details(LOG_PREFIX, unique_id)
+        log.info("GET RES DETAILS :%s" % res_details)
 
         if res_details:
-            return JsonResponse({"status": "SUCCESS", "statuscode": 200, "msg": "Restaurant details "})
+            subcategory = res_details.get('subcategory', '')
+            subcategory_list = subcategory.split(',') if subcategory else []
+            res_details['subcategory_list'] = subcategory_list
+
+            return JsonResponse({"status": "SUCCESS", "statuscode": 200, "msg": "Restaurant details", "data": res_details})
+        else:
+            return JsonResponse({"status": "FAILURE", "statuscode": 404, "msg": "Restaurant not found"})
     except Exception as e:
         log.error(f'{LOG_PREFIX}, "Result":"Failure", "Reason":"{e}"')
         return JsonResponse({"status": "FAILURE", "statuscode": 500, "msg": "Internal Server Error!"})
-
-
-
 
 
 @csrf_exempt
@@ -313,24 +316,28 @@ def add_item(request, *args, **kwargs):
     cls_register = Menu()
     cls_res = Restaurant()
     try:
-
         post_data = request.POST
 
-        subcategory_list = []
-        form = MenuForm(post_data, subcategory_list)
-
-        if not form.is_valid():
-            return JsonResponse({"status":"FAILURE","statuscode":400,"msg":form.errors})
-        log.info("KWARGS in update_res : %s" % kwargs)
-
-        # item_id = generate_item_id()
         unique_id = kwargs.get('unique_id')
         log.info("UNIQUE ID :%s" % unique_id)
 
         if not unique_id:
             return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": "Unique ID is required!"})
-        item_id = ''.join(random.choices('0123456789ABCDEF', k=16))
-        data_dict = {
+
+        res_details = cls_res._details(LOG_PREFIX, unique_id)
+        log.info("GET RES DETAILS :%s" % res_details)
+
+        if res_details:
+            subcategory = res_details.get('subcategory', '')
+            subcategory_list = subcategory.split(',') if subcategory else []
+            log.info(f"SUBCATEGORY LIST: {subcategory_list}")
+
+            form = MenuForm(post_data, subcategory_list=subcategory_list)
+            if not form.is_valid():
+                return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": form.errors})
+
+            item_id = ''.join(random.choices('0123456789ABCDEF', k=16))
+            data_dict = {
                 'unique_id': unique_id,
                 'item_id': item_id,
                 'item_name': post_data.get('item_name'),
@@ -338,13 +345,15 @@ def add_item(request, *args, **kwargs):
                 'item_price': post_data.get('item_price'),
                 'item_category': post_data.get('item_category'),
                 'item_type': post_data.get('item_type')
-        }
+            }
 
-        insert_menu_item = cls_register._add_menu(LOG_PREFIX, data=data_dict)
-        log.info("INSERT MENU ITEM :%s" %insert_menu_item)
+            insert_menu_item = cls_register._add_menu(LOG_PREFIX, data=data_dict)
+            log.info("INSERT MENU ITEM :%s" % insert_menu_item)
 
-        if insert_menu_item:
-            return JsonResponse({"status": "SUCCESS", "statuscode": 200, "msg": "Menu item added successfully!"})
+            if insert_menu_item:
+                return JsonResponse({"status": "SUCCESS", "statuscode": 200, "msg": "Menu item added successfully!"})
+        else:
+            return JsonResponse({"status": "FAILURE", "statuscode": 404, "msg": "Restaurant not found"})
     except Exception as e:
         log.error(f'{LOG_PREFIX}, "Result":"Failure", "Reason":"{e}"')
         return JsonResponse({"status": "FAILURE", "statuscode": 500, "msg": "Internal Server Error!"})
@@ -358,37 +367,83 @@ def update_item(request, *args, **kwargs):
     IP = client_ip(request)
     LOG_PREFIX = f'"EventName":"{EVENT}", "IP":"{IP}"'
     cls_register = Menu()
+    cls_res = Restaurant()
+
     try:
-
         post_data = request.POST
-        form = MenuUpdateForm(post_data)
-
-        if not form.is_valid():
-            return JsonResponse({"status":"FAILURE","statuscode":400,"msg":form.errors})
-        log.info("KWARGS in update_item : %s" % kwargs)
-
-        # item_id = generate_item_id()
         unique_id = kwargs.get('unique_id')
-        log.info("UNIQUE ID :%s" % unique_id)
+        log.info("UNIQUE ID : %s" % unique_id)
 
         if not unique_id:
             return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": "Unique ID is required!"})
 
-        update_data = {
+        res_details = cls_res._details(LOG_PREFIX, unique_id)
+        log.info("GET RES DETAILS : %s" % res_details)
+
+        if res_details:
+            subcategory = res_details.get('subcategory', '')
+            subcategory_list = subcategory.split(',') if subcategory else []
+            log.info(f"SUBCATEGORY LIST: {subcategory_list}")
+
+            form = MenuUpdateForm(post_data, subcategory_list=subcategory_list)
+            if not form.is_valid():
+                return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": form.errors})
+
+            item_id = post_data.get('item_id')  # Get item_id from POST data
+            if not item_id:
+                return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": "Item ID is required!"})
+
+            update_data = {
                 'unique_id': unique_id,
-                'item_id': post_data.get('item_id'),
+                'item_id': item_id,
                 'item_name': post_data.get('item_name'),
                 'item_description': post_data.get('item_description'),
                 'item_price': post_data.get('item_price'),
                 'item_category': post_data.get('item_category'),
                 'item_type': post_data.get('item_type')
-        }
+            }
 
-        update_menu_item = cls_register._update_menu(LOG_PREFIX, data=update_data)
-        log.info("INSERT MENU ITEM :%s" % update_menu_item)
+            update_menu_item = cls_register._update_menu(LOG_PREFIX, data=update_data)
+            log.info("UPDATE MENU ITEM : %s" % update_menu_item)
 
-        if update_menu_item:
-            return JsonResponse({"status": "SUCCESS", "statuscode": 200, "msg": "Menu item added successfully!"})
+            if update_menu_item:
+                return JsonResponse({"status": "SUCCESS", "statuscode": 200, "msg": "Menu item updated successfully!"})
+            else:
+                return JsonResponse(
+                    {"status": "FAILURE", "statuscode": 404, "msg": "Menu item not found or update failed"})
+
+        else:
+            return JsonResponse({"status": "FAILURE", "statuscode": 404, "msg": "Restaurant not found"})
+
+    except Exception as e:
+        log.error(f'{LOG_PREFIX}, "Result":"Failure", "Reason":"{e}"')
+        return JsonResponse({"status": "FAILURE", "statuscode": 500, "msg": "Internal Server Error!"})
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+@verify_auth_token
+def list_item(request, *args, **kwargs):
+    EVENT = "ListItems"
+    IP = client_ip(request)
+    LOG_PREFIX = f'"EventName":"{EVENT}", "IP":"{IP}"'
+    cls_register = Menu()
+    try:
+        unique_id = kwargs.get('unique_id')
+        log.info("UNIQUE ID : %s" % unique_id)
+
+        if not unique_id:
+            return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": "Unique ID is required!"})
+
+        items_list = cls_register.item_list(LOG_PREFIX, unique_id)
+        log.info("ITEMS LIST : %s" % items_list)
+
+        if items_list is not None:
+            return JsonResponse(
+                {"status": "SUCCESS", "statuscode": 200, "msg": "Items retrieved successfully!", "data": items_list})
+        else:
+            return JsonResponse({"status": "FAILURE", "statuscode": 500, "msg": "Failed to retrieve items!"})
+
     except Exception as e:
         log.error(f'{LOG_PREFIX}, "Result":"Failure", "Reason":"{e}"')
         return JsonResponse({"status": "FAILURE", "statuscode": 500, "msg": "Internal Server Error!"})
@@ -403,14 +458,15 @@ def delete_item(request, *args, **kwargs):
     LOG_PREFIX = f'"EventName":"{EVENT}", "IP":"{IP}"'
     cls_register = Menu()
     try:
-        item_id = kwargs.get('item_id')
-        log.info("UNIQUE ID :%s" % item_id)
+        post_data = request.POST
+        item_id = post_data.get('item_id') or kwargs.get('item_id')
+        log.info("ITEM ID: %s" % item_id)
+
         if not item_id:
             return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": "Item ID is required!"})
 
-        data = {'item_id': item_id}
-
-        item_delete = cls_register._delete_item(LOG_PREFIX, item_id, data)
+        # data = {'item_id': item_id}
+        item_delete = cls_register._delete_item(LOG_PREFIX, item_id)
         log.info("ITEM DELETE :%s" %item_delete)
 
         if item_delete:
