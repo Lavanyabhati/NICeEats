@@ -122,14 +122,8 @@ class MenuUpdateForm(forms.Form):
     item_name = forms.CharField(max_length=100)
     item_description = forms.CharField(widget=forms.Textarea)
     item_price = forms.DecimalField(max_digits=10, decimal_places=2)
-    # item_category = forms.ChoiceField(choices=[])
     item_type = forms.ChoiceField(choices=[('Veg', 'Veg'), ('Non-Veg', 'Non-Veg')])
     item_category = forms.ChoiceField()
-
-    # def __init__(self, *args, **kwargs):
-    #     subcategory_list = kwargs.pop('subcategory_list', [])
-    #     super(MenuUpdateForm, self).__init__(*args, **kwargs)
-    #     self.fields['item_category'].choices = subcategory_list
 
     def __init__(self, *args, subcategory_list=None, **kwargs):
         super(MenuUpdateForm, self).__init__(*args, **kwargs)
@@ -137,3 +131,11 @@ class MenuUpdateForm(forms.Form):
             self.fields['item_category'].choices = [(cat.strip(), cat.strip()) for cat in subcategory_list if
                                                     cat.strip()]
 
+
+class RateItemForm(forms.Form):
+    item_rating = forms.FloatField(label='Item Rating',min_value=0.0, max_value=5.0, required=True)
+
+
+class UpdateRatingForm(forms.Form):
+    old_rating = forms.FloatField(label='Old Rating',min_value=0.0, max_value=5.0, required=True)
+    new_rating = forms.FloatField(label='New Rating',min_value=0.0, max_value=5.0, required=True)

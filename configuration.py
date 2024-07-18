@@ -12,6 +12,8 @@ TOKEN_SCOPE_RESTAURANT = 'OWNER'
 MIN_TRAVEL_TIME_PER_KM = 7
 MAX_TRAVEL_TIME_PER_KM = 10
 FOOD_PREP_TIME = 20
+RATING_INCREMENT = 1
+
 ############################################ Static Values End ############################################
 
 
@@ -37,6 +39,7 @@ COLLECTION_PROFILE_USER = 'profile_user'
 COLLECTION_PROFILE_RESTAURANT = 'restaurant'
 COLLECTION_PROFILE_RESTAURANT_OWNER = 'restaurant_owner'
 COLLECTION_RES_MENU = 'Menu'
+COLLECTION_RATING = 'item_ratings'
 
 
 

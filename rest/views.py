@@ -49,10 +49,6 @@ def verify_auth_token(func):
     return wrapper
 
 
-# def generate_item_id():
-#     return ''.join(random.choices('0123456789ABCDEF', k=16))
-
-
 @csrf_exempt
 @require_http_methods(["POST"])
 @verify_auth_token
@@ -166,9 +162,9 @@ def update_res_owner(request, *args, **kwargs):
 
 
 @csrf_exempt
-@require_http_methods(["GET","POST"])
+@require_http_methods(["POST"])
 @verify_auth_token
-def list_res(request,*args, **kwargs):
+def list_res(request, *args, **kwargs):
     cls_register = Restaurant()
     EVENT = "ListRestaurants"
     IP = client_ip(request)
@@ -186,26 +182,33 @@ def list_res(request,*args, **kwargs):
         data['max_distance'] = post_data.get('max_distance')
 
         res_list = cls_register._list(LOG_PREFIX, data=data)
-        log.info("RES LIST:%s" %res_list)
+        log.info("RES LIST:%s" % res_list)
+
         if res_list:
             for res in res_list:
                 origin = (float(post_data.get('longitude')), float(post_data.get('latitude')))
                 dist = (res['location']['coordinates'][0], res['location']['coordinates'][1])
                 aerial_dist = math.ceil(geodesic(dist, origin).kilometers)
-                # road_dist = (254.5/99) * aerial_dist
                 res['distance'] = aerial_dist
-                res['delivery_time'] = f'{(aerial_dist * 7) + 20}-{(aerial_dist * 10)+ 20} Mins'
+                res['delivery_time'] = f'{(aerial_dist * 7) + 20}-{(aerial_dist * 10) + 20} Mins'
 
-        return JsonResponse({"status": "SUCCESS", "statuscode": 200, "msg": "Restaurants listed successfully!", "restaurants": res_list})
-        # else:
-        #     return JsonResponse({"status": "FAILURE", "statuscode": 404, "msg": "No restaurants found!"})
+                restaurant_rating = cls_register.get_restaurant_rating(LOG_PREFIX, res['unique_id'])
+                res['restaurant_rating'] = restaurant_rating if restaurant_rating is not None else "Rating not available"
+
+        return JsonResponse({
+            "status": "SUCCESS",
+            "statuscode": 200,
+            "msg": "Restaurants listed successfully!",
+            "restaurants": res_list
+        })
+
     except Exception as e:
         log.error(f'{LOG_PREFIX}, "Result":"Failure", "Reason":"{e}"')
         return JsonResponse({"status": "FAILURE", "statuscode": 500, "msg": "Internal Server Error!"})
 
 
 @csrf_exempt
-@require_http_methods(["GET", "POST"])
+@require_http_methods(["POST"])
 @verify_auth_token
 def update_res(request, *args, **kwargs):
     cls_register = Restaurant()
@@ -298,7 +301,12 @@ def get_res(request, *args, **kwargs):
             subcategory_list = subcategory.split(',') if subcategory else []
             res_details['subcategory_list'] = subcategory_list
 
-            return JsonResponse({"status": "SUCCESS", "statuscode": 200, "msg": "Restaurant details", "data": res_details})
+            restaurant_rating = cls_register.get_restaurant_rating(LOG_PREFIX, unique_id)
+            log.info("RESTAURANT RATING :%s" % restaurant_rating)
+            res_details['restaurant_rating'] = restaurant_rating
+
+            return JsonResponse(
+                {"status": "SUCCESS", "statuscode": 200, "msg": "Restaurant details", "data": res_details})
         else:
             return JsonResponse({"status": "FAILURE", "statuscode": 404, "msg": "Restaurant not found"})
     except Exception as e:
@@ -477,3 +485,110 @@ def delete_item(request, *args, **kwargs):
         log.error(f'{LOG_PREFIX}, "Result":"Failure", "Reason":"{e}"')
         return JsonResponse({"status": "FAILURE", "statuscode": 500, "msg": "Internal Server Error!"})
 
+
+@csrf_exempt
+@require_http_methods(["POST"])
+@verify_auth_token
+def item_rating(request, *args, **kwargs):
+    EVENT = "RateItem"
+    IP = client_ip(request)
+    LOG_PREFIX = f'"EventName":"{EVENT}", "IP":"{IP}"'
+    cls_register = Menu()
+
+    try:
+        post_data = request.POST
+
+        unique_id = kwargs.get('unique_id')
+        logging.info("UNIQUE ID :%s" % unique_id)
+
+        if not unique_id:
+            return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": "Unique ID is required!"})
+
+        form = RateItemForm(post_data)
+        if not form.is_valid():
+            return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": form.errors})
+
+        item_id = post_data.get('item_id')
+        item_rating = float(post_data.get('item_rating'))
+
+        if not item_id or item_rating is None:
+            return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": "Item ID and rating are required!"})
+
+        data_dict = {
+            'item_id': item_id,
+            'item_rating': item_rating,
+        }
+        add_item_rating = cls_register._rate_item(LOG_PREFIX, data_dict)
+        logging.info("RATE ITEM :%s" % add_item_rating)
+
+        if add_item_rating:
+            item = cls_register.db_item_rating._find_one({'item_id': item_id})
+            return JsonResponse({
+                "status": "SUCCESS",
+                "statuscode": 200,
+                "msg": "Item rated successfully!",
+                "data": {
+                        "avg_rating": item['avg_rating'],
+                        "no_of_ratings": item['no_of_ratings']
+                }
+            })
+        else:
+            return JsonResponse({"status": "FAILURE", "statuscode": 404, "msg": "Item not found"})
+    except Exception as e:
+        logging.error(f'{LOG_PREFIX}, "Result":"Failure", "Reason":"{e}"')
+        return JsonResponse({"status": "FAILURE", "statuscode": 500, "msg": "Internal Server Error!"})
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+@verify_auth_token
+def update_rating(request, *args, **kwargs):
+    EVENT = "UpdateItemRating"
+    IP = client_ip(request)
+    LOG_PREFIX = f'"EventName":"{EVENT}", "IP":"{IP}"'
+    cls_register = Menu()
+
+    try:
+        post_data = request.POST
+
+        unique_id = kwargs.get('unique_id')
+        logging.info("UNIQUE ID :%s" % unique_id)
+
+        if not unique_id:
+            return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": "Unique ID is required!"})
+
+        form = UpdateRatingForm(post_data)
+        if not form.is_valid():
+            return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": form.errors})
+
+        item_id = post_data.get('item_id')
+        old_rating = float(post_data.get('old_rating'))
+        new_rating = float(post_data.get('new_rating'))
+
+        if not item_id or old_rating is None or new_rating is None:
+            return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": "Item ID, old rating, and new rating are required!"})
+
+        data_dict = {
+            'item_id': item_id,
+            'old_rating': old_rating,
+            'new_rating': new_rating,
+        }
+        updated_rating = cls_register.update_item_rating(LOG_PREFIX, data_dict)
+        logging.info("UPDATE ITEM RATING :%s" % updated_rating)
+
+        if updated_rating:
+            item = cls_register.db_item_rating._find_one({'item_id': item_id})
+            return JsonResponse({
+                "status": "SUCCESS",
+                "statuscode": 200,
+                "msg": "Item rating updated successfully!",
+                "data": {
+                    "avg_rating": item['avg_rating'],
+                    "no_of_ratings": item['no_of_ratings']
+                }
+            })
+        else:
+            return JsonResponse({"status": "FAILURE", "statuscode": 404, "msg": "Item not found"})
+    except Exception as e:
+        logging.error(f'{LOG_PREFIX}, "Result":"Failure", "Reason":"{e}"')
+        return JsonResponse({"status": "FAILURE", "statuscode": 500, "msg": "Internal Server Error!"})

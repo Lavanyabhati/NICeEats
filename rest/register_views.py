@@ -13,6 +13,7 @@ class Restaurant:
         self.db_res = DBOperation(COLLECTION_PROFILE_RESTAURANT)
         self.db_res_owner = DBOperation(COLLECTION_PROFILE_RESTAURANT_OWNER)
         self.db_res_menu = DBOperation(COLLECTION_RES_MENU)
+        self.db_item_rating = DBOperation(COLLECTION_RATING)
 
     def _find(self, LOG_PREFIX, mobile_number):
         success = False
@@ -159,6 +160,38 @@ class Restaurant:
             log.error(f'{LOG_PREFIX}, "Result":"Failure", "Reason":"{e}"')
             return None
 
+    def get_restaurant_rating(self, LOG_PREFIX, unique_id):
+        try:
+            query = {'unique_id': unique_id}
+            items_list = self.db_res_menu._find_all(query)
+
+            total_rating = 0
+            total_items = 0
+
+            for item in items_list:
+                item_id = item.get('item_id')
+                rating_info = self.db_item_rating._find_one({'item_id': item_id}, remove_ts=True)
+                logging.info("RATING INFO::: %s" % rating_info)
+
+                if isinstance(rating_info, dict):
+                    res_rating = rating_info.get('avg_rating', 0)
+                    no_of_ratings = rating_info.get('no_of_ratings', 0)
+
+                    total_rating += res_rating * no_of_ratings
+                    total_items += no_of_ratings
+
+            if total_items == 0:
+                return 0
+
+            restaurant_rating = total_rating / total_items
+            restaurant_rating = round(restaurant_rating, 1)
+
+            return restaurant_rating
+
+        except Exception as e:
+            log.error(f'{LOG_PREFIX}, "Result":"Failure", "Reason":"{e}"')
+            return None
+
     def _list(self, LOG_PREFIX, data):
         try:
             lat = data.get('latitude')
@@ -244,6 +277,7 @@ class Restaurant:
 class Menu:
     def __init__(self):
         self.db_res_menu = DBOperation(COLLECTION_RES_MENU)
+        self.db_item_rating = DBOperation(COLLECTION_RATING)
 
     def _add_menu(self, LOG_PREFIX, data):
         try:
@@ -313,6 +347,18 @@ class Menu:
             log.info("QUERY :: %s" % query)
             items_list = self.db_res_menu._find_all(filter=query, sort_ts=True)
             log.info("COLLECTION : %s" % self.db_res_menu.coll_name)
+
+            for item in items_list:
+                item_id = item.get('item_id')
+                rating_info = self.db_item_rating._find_one({'item_id': item_id}, {'avg_rating': 1, 'no_of_ratings': 1})
+
+                if rating_info:
+                    item['avg_rating'] = rating_info.get('avg_rating', 0)
+                    item['no_of_ratings'] = rating_info.get('no_of_ratings', 0)
+                else:
+                    item['avg_rating'] = 0
+                    item['no_of_ratings'] = 0
+
             return items_list
 
         except Exception as e:
@@ -335,3 +381,77 @@ class Menu:
         except Exception as e:
             logging.error(f'{LOG_PREFIX}, "Result":"Failure", "Reason":"{e}"')
             return False
+
+    def _rate_item(self, LOG_PREFIX, data):
+        try:
+            item_id = data.get('item_id')
+            item_rating = data.get('item_rating')
+
+            item = self.db_item_rating._find_one({'item_id': item_id})
+
+            if item:
+                new_no_of_ratings = item.get('no_of_ratings', 0) + 1
+                new_avg_rating = ((item.get('avg_rating', 0) * item.get('no_of_ratings',
+                                                                        0)) + item_rating) / new_no_of_ratings
+
+                new_avg_rating = round(new_avg_rating, 1)
+
+                filter_data = {
+                    'item_id': item_id
+                }
+                update_data = {
+                    'avg_rating': new_avg_rating,
+                    'no_of_ratings': new_no_of_ratings,
+                    'updated_at': datetime.now()
+                }
+                self.db_item_rating._update(filter_q=filter_data, update_data=update_data)
+            else:
+                data_dict = {
+                    'item_id': item_id,
+                    'avg_rating': item_rating,
+                    'no_of_ratings': 1,
+                    'created_at': datetime.now(),
+                    'updated_at': datetime.now(),
+                }
+                self.db_item_rating._insert(data=data_dict)
+
+            return True
+        except Exception as e:
+            logging.error(f'{LOG_PREFIX}, "Result":"Failure", "Reason":"{e}"')
+            return None
+
+    def update_item_rating(self, LOG_PREFIX, data):
+        try:
+            item_id = data.get('item_id')
+            old_rating = data.get('old_rating')
+            new_rating = data.get('new_rating')
+
+            item = self.db_item_rating._find_one({'item_id': item_id})
+
+            if item:
+                no_of_ratings = item.get('no_of_ratings', 0)
+                avg_rating = item.get('avg_rating', 0)
+
+                if no_of_ratings <= 1:
+                    new_avg_rating = new_rating
+                else:
+                    total_rating = avg_rating * no_of_ratings
+                    total_rating = total_rating - old_rating + new_rating
+                    new_avg_rating = total_rating / no_of_ratings
+
+                new_avg_rating = round(new_avg_rating, 1)
+
+                filter_data = {
+                    'item_id': item_id
+                }
+                update_data = {
+                    'avg_rating': new_avg_rating,
+                    'updated_at': datetime.now()
+                }
+                self.db_item_rating._update(filter_q=filter_data, update_data=update_data)
+            else:
+                return False
+            return True
+        except Exception as e:
+            logging.error(f'{LOG_PREFIX}, "Result":"Failure", "Reason":"{e}"')
+            return None
