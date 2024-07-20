@@ -1,4 +1,13 @@
-Django~=5.0.6
-pymongo~=4.7.3
-PyJWT~=2.8.0
-pip~=24.0
+asgiref==3.8.1
+cramjam==2.8.3
+Django==5.0.7
+dnspython==2.6.1
+geographiclib==2.0
+geopy==2.4.1
+PyJWT==2.8.0
+pymongo==4.7.3
+python-snappy==0.7.1
+pytz==2024.1
+sqlparse==0.5.0
+tzdata==2024.1
+winkerberos==0.10.0

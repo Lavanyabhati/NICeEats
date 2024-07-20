@@ -1,3 +1,4 @@
+import json
 import random
 
 from django.http import JsonResponse
@@ -23,13 +24,14 @@ def otp(request):
     IP = client_ip(request)
     LOG_PREFIX = f'"EventName":"{EVENT}", "IP":"{IP}"'
     try:
-        form = OTPForm(request.POST)
+        decoded_body = json.loads((request.body).decode())
+        form = OTPForm(decoded_body)
         if not form.is_valid():
             log.info(f'{LOG_PREFIX}, "Action":"ValidateForm", "Result":"Failure", "Reason":"{form.errors}"')
             return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": form.errors})
 
-        mobile_number = request.POST.get('mobile_number')
-        action = request.POST['action']
+        mobile_number = decoded_body.get('mobile_number')
+        action = decoded_body['action']
         uri = request.build_absolute_uri()
         log.info("Requested URL : %s" %uri)
 
@@ -59,7 +61,7 @@ def otp(request):
 
 
         elif action == 'verify':
-            otp_code = request.POST.get('otp')
+            otp_code = decoded_body.get('otp')
             v_status, v_response = otp_handler.verify(LOG_PREFIX, mobile_number, otp_code,user_type)
             if v_status:
                 unique_id = ''.join(random.choices('0123456789ABCDEF', k=16))

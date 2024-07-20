@@ -8,7 +8,7 @@ class RegisterRestaurantForm(forms.Form):
     category = forms.CharField(max_length=255)
     latitude = forms.CharField(max_length=100)
     longitude = forms.CharField(max_length=100)
-    food_type = forms.ChoiceField(choices=[('veg', 'Vegetarian'), ('non-veg', 'Non-Vegetarian'), ('both', 'Both')])
+    food_type = forms.ChoiceField(choices=[('veg', 'Vegetarian'), ('non-veg', 'Non-Vegetarian'), ('veg/non-veg', 'Veg/Non-Veg')])
     operating_hours = forms.CharField(widget=forms.Textarea)
     subcategory = forms.CharField(widget=forms.Textarea, help_text="Enter each subcategory separated by a comma.")
 
@@ -57,7 +57,7 @@ class RestaurantUpdateForm(forms.Form):
     category = forms.CharField(max_length=255)
     latitude = forms.CharField(max_length=100)
     longitude = forms.CharField(max_length=100)
-    food_type = forms.ChoiceField(choices=[('veg', 'Vegetarian'), ('non-veg', 'Non-Vegetarian'), ('both', 'Both')])
+    food_type = forms.ChoiceField(choices=[('veg', 'Vegetarian'), ('non-veg', 'Non-Vegetarian'), ('veg/non-veg', 'Veg/Non-Veg')])
     operating_hours = forms.CharField(widget=forms.Textarea)
     subcategory = forms.CharField(widget=forms.Textarea, help_text="Enter each subcategory separated by a comma.")
 

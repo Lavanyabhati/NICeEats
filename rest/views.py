@@ -1,3 +1,4 @@
+import json
 from django.http import JsonResponse
 from .forms import *
 from .register_views import *
@@ -59,8 +60,8 @@ def register_res(request, *args, **kwargs):
     cls_register = Restaurant()
     try:
 
-        post_data = request.POST
-        form = RegisterRestaurantForm(post_data)
+        decoded_body = json.loads((request.body).decode())
+        form = RegisterRestaurantForm(decoded_body)
 
         if not form.is_valid():
             return JsonResponse({"status":"FAILURE","statuscode":400,"msg":form.errors})
@@ -73,14 +74,14 @@ def register_res(request, *args, **kwargs):
 
         data_dict = {
                 'unique_id': unique_id,
-                'name': post_data.get('name'),
-                'category': post_data.get('category'),
-                'location_name': post_data.get('location_name'),
-                'latitude': post_data.get('latitude'),
-                'longitude': post_data.get('longitude'),
-                'food_type': post_data.get('food_type'),
-                'operating_hours': post_data.get('operating_hours'),
-                'subcategory': post_data.get('subcategory')
+                'name': decoded_body.get('name'),
+                'category': decoded_body.get('category'),
+                'location_name': decoded_body.get('location_name'),
+                'latitude': decoded_body.get('latitude'),
+                'longitude': decoded_body.get('longitude'),
+                'food_type': decoded_body.get('food_type'),
+                'operating_hours': decoded_body.get('operating_hours'),
+                'subcategory': decoded_body.get('subcategory')
         }
 
         insert_res = cls_register._add(LOG_PREFIX, data=data_dict)
@@ -101,12 +102,12 @@ def register_res_owner(request):
     IP = client_ip(request)
     LOG_PREFIX = f'"EventName":"{EVENT}", "IP":"{IP}"'
     try:
-        post_data = request.POST
-        form = RegisterRestaurantOwnerForm(post_data)
+        decoded_body = json.loads((request.body).decode())
+        form = RegisterRestaurantOwnerForm(decoded_body)
         if not form.is_valid():
             return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": form.errors})
 
-        insert_res_owner = cls_register._add_owner_details(LOG_PREFIX, data=post_data)
+        insert_res_owner = cls_register._add_owner_details(LOG_PREFIX, data=decoded_body)
 
         if insert_res_owner:
             return JsonResponse({"status": "SUCCESS", "statuscode": 200, "msg": "Restaurant registered successfully!"})
@@ -125,8 +126,8 @@ def update_res_owner(request, *args, **kwargs):
     IP = client_ip(request)
     LOG_PREFIX = f'"EventName":"{EVENT}", "IP":"{IP}"'
     try:
-        post_data = request.POST
-        form = UpdateRestaurantOwnerForm(post_data)
+        decoded_body = json.loads((request.body).decode())
+        form = UpdateRestaurantOwnerForm(decoded_body)
         if not form.is_valid():
             return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": form.errors})
 
@@ -140,13 +141,13 @@ def update_res_owner(request, *args, **kwargs):
         update_data = {
             'unique_id': unique_id,
             'mobile_number': mobile_number,
-            'name': post_data.get('name', ''),
-            'address': post_data.get('address', ''),
-            'email': post_data.get('email', ''),
-            'date_of_birth': post_data.get('date_of_birth', ''),
-            'gender': post_data.get('gender', ''),
-            'verification_id': post_data.get('verification_id', ''),
-            'verification_type': post_data.get('verification_type', ''),
+            'name': decoded_body.get('name', ''),
+            'address': decoded_body.get('address', ''),
+            'email': decoded_body.get('email', ''),
+            'date_of_birth': decoded_body.get('date_of_birth', ''),
+            'gender': decoded_body.get('gender', ''),
+            'verification_id': decoded_body.get('verification_id', ''),
+            'verification_type': decoded_body.get('verification_type', ''),
         }
 
         res_owner_update = cls_register._update_owner_details(LOG_PREFIX, data=update_data)
@@ -169,24 +170,23 @@ def list_res(request, *args, **kwargs):
     EVENT = "ListRestaurants"
     IP = client_ip(request)
     LOG_PREFIX = f'"EventName":"{EVENT}", "IP":"{IP}"'
-
     try:
-        post_data = request.POST
-        form = RestaurantListForm(post_data)
+        decoded_body = json.loads((request.body).decode())
+        form = RestaurantListForm(decoded_body)
         if not form.is_valid():
             return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": form.errors})
 
         data = {}
-        data['latitude'] = post_data.get('latitude')
-        data['longitude'] = post_data.get('longitude')
-        data['max_distance'] = post_data.get('max_distance')
+        data['latitude'] = decoded_body.get('latitude')
+        data['longitude'] = decoded_body.get('longitude')
+        data['max_distance'] = decoded_body.get('max_distance')
 
         res_list = cls_register._list(LOG_PREFIX, data=data)
         log.info("RES LIST:%s" % res_list)
 
         if res_list:
             for res in res_list:
-                origin = (float(post_data.get('longitude')), float(post_data.get('latitude')))
+                origin = (float(decoded_body.get('longitude')), float(decoded_body.get('latitude')))
                 dist = (res['location']['coordinates'][0], res['location']['coordinates'][1])
                 aerial_dist = math.ceil(geodesic(dist, origin).kilometers)
                 res['distance'] = aerial_dist
@@ -217,8 +217,8 @@ def update_res(request, *args, **kwargs):
     LOG_PREFIX = f'"EventName":"{EVENT}", "IP":"{IP}"'
     try:
         log.info("In Here...")
-        post_data = request.POST
-        form = RestaurantUpdateForm(post_data)
+        decoded_body = json.loads((request.body).decode())
+        form = RestaurantUpdateForm(decoded_body)
         if not form.is_valid():
             return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": form.errors})
         log.info("KWARGS in update_res : %s" % kwargs)
@@ -227,14 +227,14 @@ def update_res(request, *args, **kwargs):
 
         update_data = {
             'unique_id': unique_id,
-            'name': post_data.get('name', ''),
-            'location_name': post_data.get('location_name', ''),
-            'category': post_data.get('category', ''),
-            'location_long': post_data.get('longitude'),
-            'location_lat': post_data.get('latitude'),
-            'food_type': post_data.get('food_type'),
-            'operating_hours': post_data.get('operating_hours'),
-            'subcategory': post_data.get('subcategory')
+            'name': decoded_body.get('name', ''),
+            'location_name': decoded_body.get('location_name', ''),
+            'category': decoded_body.get('category', ''),
+            'location_long': decoded_body.get('longitude'),
+            'location_lat': decoded_body.get('latitude'),
+            'food_type': decoded_body.get('food_type'),
+            'operating_hours': decoded_body.get('operating_hours'),
+            'subcategory': decoded_body.get('subcategory')
         }
         log.info("update_data :%s" % update_data)
 
@@ -324,7 +324,7 @@ def add_item(request, *args, **kwargs):
     cls_register = Menu()
     cls_res = Restaurant()
     try:
-        post_data = request.POST
+        decoded_body = json.loads((request.body).decode())
 
         unique_id = kwargs.get('unique_id')
         log.info("UNIQUE ID :%s" % unique_id)
@@ -340,7 +340,7 @@ def add_item(request, *args, **kwargs):
             subcategory_list = subcategory.split(',') if subcategory else []
             log.info(f"SUBCATEGORY LIST: {subcategory_list}")
 
-            form = MenuForm(post_data, subcategory_list=subcategory_list)
+            form = MenuForm(decoded_body, subcategory_list=subcategory_list)
             if not form.is_valid():
                 return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": form.errors})
 
@@ -348,11 +348,11 @@ def add_item(request, *args, **kwargs):
             data_dict = {
                 'unique_id': unique_id,
                 'item_id': item_id,
-                'item_name': post_data.get('item_name'),
-                'item_description': post_data.get('item_description'),
-                'item_price': post_data.get('item_price'),
-                'item_category': post_data.get('item_category'),
-                'item_type': post_data.get('item_type')
+                'item_name': decoded_body.get('item_name'),
+                'item_description': decoded_body.get('item_description'),
+                'item_price': decoded_body.get('item_price'),
+                'item_category': decoded_body.get('item_category'),
+                'item_type': decoded_body.get('item_type')
             }
 
             insert_menu_item = cls_register._add_menu(LOG_PREFIX, data=data_dict)
@@ -378,7 +378,7 @@ def update_item(request, *args, **kwargs):
     cls_res = Restaurant()
 
     try:
-        post_data = request.POST
+        decoded_body = json.loads((request.body).decode())
         unique_id = kwargs.get('unique_id')
         log.info("UNIQUE ID : %s" % unique_id)
 
@@ -393,22 +393,22 @@ def update_item(request, *args, **kwargs):
             subcategory_list = subcategory.split(',') if subcategory else []
             log.info(f"SUBCATEGORY LIST: {subcategory_list}")
 
-            form = MenuUpdateForm(post_data, subcategory_list=subcategory_list)
+            form = MenuUpdateForm(decoded_body, subcategory_list=subcategory_list)
             if not form.is_valid():
                 return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": form.errors})
 
-            item_id = post_data.get('item_id')  # Get item_id from POST data
+            item_id = decoded_body.get('item_id')  # Get item_id from POST data
             if not item_id:
                 return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": "Item ID is required!"})
 
             update_data = {
                 'unique_id': unique_id,
                 'item_id': item_id,
-                'item_name': post_data.get('item_name'),
-                'item_description': post_data.get('item_description'),
-                'item_price': post_data.get('item_price'),
-                'item_category': post_data.get('item_category'),
-                'item_type': post_data.get('item_type')
+                'item_name': decoded_body.get('item_name'),
+                'item_description': decoded_body.get('item_description'),
+                'item_price': decoded_body.get('item_price'),
+                'item_category': decoded_body.get('item_category'),
+                'item_type': decoded_body.get('item_type')
             }
 
             update_menu_item = cls_register._update_menu(LOG_PREFIX, data=update_data)
@@ -466,8 +466,8 @@ def delete_item(request, *args, **kwargs):
     LOG_PREFIX = f'"EventName":"{EVENT}", "IP":"{IP}"'
     cls_register = Menu()
     try:
-        post_data = request.POST
-        item_id = post_data.get('item_id') or kwargs.get('item_id')
+        decoded_body = json.loads((request.body).decode())
+        item_id = decoded_body.get('item_id') or kwargs.get('item_id')
         log.info("ITEM ID: %s" % item_id)
 
         if not item_id:
@@ -496,7 +496,7 @@ def item_rating(request, *args, **kwargs):
     cls_register = Menu()
 
     try:
-        post_data = request.POST
+        decoded_body = json.loads((request.body).decode())
 
         unique_id = kwargs.get('unique_id')
         logging.info("UNIQUE ID :%s" % unique_id)
@@ -504,12 +504,12 @@ def item_rating(request, *args, **kwargs):
         if not unique_id:
             return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": "Unique ID is required!"})
 
-        form = RateItemForm(post_data)
+        form = RateItemForm(decoded_body)
         if not form.is_valid():
             return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": form.errors})
 
-        item_id = post_data.get('item_id')
-        item_rating = float(post_data.get('item_rating'))
+        item_id = decoded_body.get('item_id')
+        item_rating = float(decoded_body.get('item_rating'))
 
         if not item_id or item_rating is None:
             return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": "Item ID and rating are required!"})
@@ -549,7 +549,7 @@ def update_rating(request, *args, **kwargs):
     cls_register = Menu()
 
     try:
-        post_data = request.POST
+        decoded_body = json.loads((request.body).decode())
 
         unique_id = kwargs.get('unique_id')
         logging.info("UNIQUE ID :%s" % unique_id)
@@ -557,13 +557,13 @@ def update_rating(request, *args, **kwargs):
         if not unique_id:
             return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": "Unique ID is required!"})
 
-        form = UpdateRatingForm(post_data)
+        form = UpdateRatingForm(decoded_body)
         if not form.is_valid():
             return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": form.errors})
 
-        item_id = post_data.get('item_id')
-        old_rating = float(post_data.get('old_rating'))
-        new_rating = float(post_data.get('new_rating'))
+        item_id = decoded_body.get('item_id')
+        old_rating = float(decoded_body.get('old_rating'))
+        new_rating = float(decoded_body.get('new_rating'))
 
         if not item_id or old_rating is None or new_rating is None:
             return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": "Item ID, old rating, and new rating are required!"})
