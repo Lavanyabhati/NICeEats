@@ -298,7 +298,7 @@ def get_res(request, *args, **kwargs):
 
         if res_details:
             subcategory = res_details.get('subcategory', '')
-            subcategory_list = subcategory.split(',') if subcategory else []
+            subcategory_list = [subcat.strip() for subcat in subcategory.split(',') if subcat]
             res_details['subcategory_list'] = subcategory_list
 
             restaurant_rating = cls_register.get_restaurant_rating(LOG_PREFIX, unique_id)
@@ -337,8 +337,8 @@ def add_item(request, *args, **kwargs):
 
         if res_details:
             subcategory = res_details.get('subcategory', '')
-            subcategory_list = subcategory.split(',') if subcategory else []
-            log.info(f"SUBCATEGORY LIST: {subcategory_list}")
+            subcategory_list = [subcat.strip() for subcat in subcategory.split(',') if subcat]
+            res_details['subcategory_list'] = subcategory_list
 
             form = MenuForm(decoded_body, subcategory_list=subcategory_list)
             if not form.is_valid():
@@ -390,8 +390,8 @@ def update_item(request, *args, **kwargs):
 
         if res_details:
             subcategory = res_details.get('subcategory', '')
-            subcategory_list = subcategory.split(',') if subcategory else []
-            log.info(f"SUBCATEGORY LIST: {subcategory_list}")
+            subcategory_list = [subcat.strip() for subcat in subcategory.split(',') if subcat]
+            res_details['subcategory_list'] = subcategory_list
 
             form = MenuUpdateForm(decoded_body, subcategory_list=subcategory_list)
             if not form.is_valid():

@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'rest',
     'user',
     'Auth',
+    'delivery',
 ]
 
 MIDDLEWARE = [

@@ -12,6 +12,7 @@ from .background import OTP
 from configuration import *
 from rest.register_views import Restaurant, Menu
 from user.register_views import User
+from delivery.background import Agent
 
 
 @require_http_methods(["POST"])
@@ -38,11 +39,18 @@ def otp(request):
         if "restaurant" in uri:
             user_type = "restaurant"
             token_scope = TOKEN_SCOPE_RESTAURANT
+            prefix = "R_"
             cls_register = Restaurant()
         elif "user" in uri:
             user_type = "user"
             token_scope = TOKEN_SCOPE_USER
+            prefix = "U_"
             cls_register = User()
+        elif "agent" in uri:
+            user_type = "agent"
+            token_scope = TOKEN_SCOPE_AGENT
+            prefix = "A_"
+            cls_register = Agent()
         else:
             user_type = "unknown"
             token_scope = ''
@@ -64,7 +72,9 @@ def otp(request):
             otp_code = decoded_body.get('otp')
             v_status, v_response = otp_handler.verify(LOG_PREFIX, mobile_number, otp_code,user_type)
             if v_status:
-                unique_id = ''.join(random.choices('0123456789ABCDEF', k=16))
+                # unique_id = ''.join(random.choices('0123456789ABCDEF', k=16))
+                unique_id = ''.join(random.choices('0123456789ABCDEF', k=14))  # Generate 14-bit random ID
+                unique_id = prefix + unique_id
                 profile_status, profile_data = cls_register._find(LOG_PREFIX, mobile_number)
                 if profile_status:
                     # user exists in the collection profile_user
@@ -74,7 +84,6 @@ def otp(request):
                         'firstname': profile_data.get('first_name', ''),
                         'lastname': profile_data.get('last_name', ''),
                         'scope': token_scope,
-                        # 'user_type': user_type
                     }
                     token_status, token_res = cls_jwt._generate('access', token_payload)
                     refresh_token_status, refresh_token_res = cls_jwt._generate('refresh', token_payload)
@@ -92,6 +101,15 @@ def otp(request):
                     if token_scope == TOKEN_SCOPE_USER:
                         add_result = cls_register._add(LOG_PREFIX, mobile_number)
                         log.info("USER.....")
+
+                    elif token_scope == TOKEN_SCOPE_AGENT:
+                        data = {
+                            'mobile_number': mobile_number,
+                            'unique_id': unique_id,
+                        }
+                        add_result = cls_register._add_delivery_agent(LOG_PREFIX, data)
+                        log.info("AGENT.....")
+
                     else:
                         data = {
                             'mobile_number': mobile_number,
