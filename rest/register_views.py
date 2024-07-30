@@ -15,6 +15,21 @@ class Restaurant:
         self.db_res_menu = DBOperation(COLLECTION_RES_MENU)
         self.db_item_rating = DBOperation(COLLECTION_RATING)
 
+    def _update_owner_status(self, unique_id, status):
+        try:
+            filter_q = {'unique_id': unique_id}
+            update_data = {'account_status': status}
+            update_result = self.db_res_owner._update(filter_q, update_data)
+
+            if update_result:
+                return True
+            else:
+                log.error(f'Failed to update account status for {unique_id}. No document matched the query.')
+                return False
+        except Exception as e:
+            log.error(f'Failed to update account status for {unique_id}. Reason: {e}')
+            return False
+
     def _find(self, LOG_PREFIX, mobile_number):
         success = False
         ACTION = "Restaurant._find()"
@@ -130,6 +145,7 @@ class Restaurant:
                 'date_of_birth': date_of_birth,
                 'gender': gender,
                 'profile_type': 'OWNER',
+                # 'account_status': 1,
                 'verification_id': verification_id,
                 'verification_type': verification_type,
                 'updated_at': datetime.now(),
@@ -147,14 +163,27 @@ class Restaurant:
             log.error(f'{LOG_PREFIX}, "Result":"Failure", "Reason":"{e}"')
             return {"status": "FAILURE", "message": "Error updating owner details"}
 
-    def _details(self, LOG_PREFIX, unique_id):
+    def _res_details(self, LOG_PREFIX, unique_id):
         try:
             data_dict = {
                 'unique_id': unique_id,
             }
-            log.info("DBRES ::: %s" %self.db_res_menu.coll_name)
+            log.info("DBRES ::: %s" %self.db_res.coll_name)
             res_details = self.db_res._find_one(filter=data_dict)
             return res_details
+
+        except Exception as e:
+            log.error(f'{LOG_PREFIX}, "Result":"Failure", "Reason":"{e}"')
+            return None
+
+    def _res_owner_details(self, LOG_PREFIX, unique_id):
+        try:
+            data_dict = {
+                'unique_id': unique_id,
+            }
+            log.info("DBRES ::: %s" %self.db_res_owner.coll_name)
+            res_owner_details = self.db_res_owner._find_one(filter=data_dict)
+            return res_owner_details
 
         except Exception as e:
             log.error(f'{LOG_PREFIX}, "Result":"Failure", "Reason":"{e}"')

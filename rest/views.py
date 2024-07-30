@@ -88,6 +88,7 @@ def register_res(request, *args, **kwargs):
         log.info("INSERT RES :%s" %insert_res)
 
         if insert_res:
+            cls_register._update_owner_status(unique_id=unique_id, status=2)
             return JsonResponse({"status": "SUCCESS", "statuscode": 200, "msg": "Restaurant registered successfully!"})
     except Exception as e:
         log.error(f'{LOG_PREFIX}, "Result":"Failure", "Reason":"{e}"')
@@ -153,6 +154,7 @@ def update_res_owner(request, *args, **kwargs):
         res_owner_update = cls_register._update_owner_details(LOG_PREFIX, data=update_data)
         log.info("RES OWNER UPDATE :%s" %res_owner_update)
         if res_owner_update:
+            cls_register._update_owner_status(unique_id=unique_id, status=1)
             return JsonResponse({"status": "SUCCESS", "statuscode": 200, "msg": "Restaurant owner updated successfully!"})
         else:
             return JsonResponse({"status": "FAILURE", "statuscode": 500, "msg": "Failed to update restaurant owner!"})
@@ -293,7 +295,7 @@ def get_res(request, *args, **kwargs):
     try:
         unique_id = kwargs.get('unique_id')
         log.info("UNIQUE ID :%s" % unique_id)
-        res_details = cls_register._details(LOG_PREFIX, unique_id)
+        res_details = cls_register._res_details(LOG_PREFIX, unique_id)
         log.info("GET RES DETAILS :%s" % res_details)
 
         if res_details:
@@ -307,6 +309,30 @@ def get_res(request, *args, **kwargs):
 
             return JsonResponse(
                 {"status": "SUCCESS", "statuscode": 200, "msg": "Restaurant details", "data": res_details})
+        else:
+            return JsonResponse({"status": "FAILURE", "statuscode": 404, "msg": "Restaurant not found"})
+    except Exception as e:
+        log.error(f'{LOG_PREFIX}, "Result":"Failure", "Reason":"{e}"')
+        return JsonResponse({"status": "FAILURE", "statuscode": 500, "msg": "Internal Server Error!"})
+
+
+@csrf_exempt
+@require_http_methods(["GET"])
+@verify_auth_token
+def get_res_owner(request, *args, **kwargs):
+    EVENT = "GetResOwnerDetails"
+    IP = client_ip(request)
+    LOG_PREFIX = f'"EventName":"{EVENT}", "IP":"{IP}"'
+    cls_register = Restaurant()
+
+    try:
+        unique_id = kwargs.get('unique_id')
+        log.info("UNIQUE ID :%s" % unique_id)
+        res_owner_details = cls_register._res_owner_details(LOG_PREFIX, unique_id)
+        log.info("GET RES OWNER DETAILS :%s" % res_owner_details)
+
+        if res_owner_details:
+            return JsonResponse({"status": "SUCCESS", "statuscode": 200, "msg": "Restaurant details", "data": res_owner_details})
         else:
             return JsonResponse({"status": "FAILURE", "statuscode": 404, "msg": "Restaurant not found"})
     except Exception as e:
@@ -332,7 +358,7 @@ def add_item(request, *args, **kwargs):
         if not unique_id:
             return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": "Unique ID is required!"})
 
-        res_details = cls_res._details(LOG_PREFIX, unique_id)
+        res_details = cls_res._res_details(LOG_PREFIX, unique_id)
         log.info("GET RES DETAILS :%s" % res_details)
 
         if res_details:
@@ -359,6 +385,7 @@ def add_item(request, *args, **kwargs):
             log.info("INSERT MENU ITEM :%s" % insert_menu_item)
 
             if insert_menu_item:
+                cls_res._update_owner_status(unique_id=unique_id, status=3)
                 return JsonResponse({"status": "SUCCESS", "statuscode": 200, "msg": "Menu item added successfully!"})
         else:
             return JsonResponse({"status": "FAILURE", "statuscode": 404, "msg": "Restaurant not found"})

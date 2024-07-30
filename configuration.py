@@ -33,8 +33,8 @@ log.setLevel(logging.INFO)
 ############################################ Database Connection Start ############################################
 DB_HOST = "localhost"
 DB_PORT = 27017
-# DB_NAME = "NICeEats"
-DB_NAME = "Restaurant_database"
+DB_NAME = "NICeEats"
+# DB_NAME = "Restaurant_database"
 COLLECTION_OTP = 'otp'
 COLLECTION_PROFILE_USER = 'profile_user'
 COLLECTION_PROFILE_RESTAURANT = 'restaurant'

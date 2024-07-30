@@ -57,7 +57,7 @@ class OTP:
             if not otp_data:
                 log.info(
                     f'{LOG_PREFIX}, "Action":{ACTION}, "MobileNo":"{mobile_number}","UserType":"{user_type}", "OTP":"{otp_code}", "Result":"Failure", "Reason":"DataNotFound"')
-                return success, 'Data Not Found'
+                return success, 'Invalid OTP'
 
             db_dt = otp_data.get('created_at')
             log.info("DT DIFF ::::: %s" %(datetime.now() - db_dt).total_seconds())

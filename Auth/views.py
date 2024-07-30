@@ -127,7 +127,6 @@ def otp(request):
                         'firstname': '',
                         'lastname': '',
                         'scope': token_scope,
-                        # 'user_type': user_type
                     }
                     token_status, token_res = cls_jwt._generate('access', token_payload)
                     refresh_token_status, refresh_token_res = cls_jwt._generate('refresh', token_payload)

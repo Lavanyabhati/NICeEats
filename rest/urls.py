@@ -10,6 +10,7 @@ urlpatterns = [
     path('delete/', delete_res, name='register_delete'),
     path('list/', list_res, name='register_list'),
     path('details/', get_res, name='get_res'),
+    path('owner/details/', get_res_owner, name='get_res_owner'),
     path('menu/add/', add_item, name='add_item'),
     path('menu/update/', update_item, name='update_item'),
     path('menu/delete/', delete_item, name='delete_item'),
