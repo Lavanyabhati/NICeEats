@@ -1,11 +1,15 @@
 from datetime import datetime
 from configuration import *
 from helpers.dbhelper import DBOperation
+from rest.register_views import Menu
+from django.http import JsonResponse
+from helpers.dbhelper import DBOperation
 
 
 class User:
     def __init__(self):
         self.db_user = DBOperation(COLLECTION_PROFILE_USER)
+
 
     def _find(self, LOG_PREFIX, mobile_number):
         success = False
@@ -98,6 +102,104 @@ class User:
             return False
 
 
+
+class Cart:
+
+    def __init__(self):
+        self.db_user = DBOperation(COLLECTION_CART)
+
+    def add_to_cart(self,LOG_PREFIX,cart,user_id,item,item_id,item_quantity):
+        if not cart:
+            return self.create_newcart('LOG_PREFIX',user_id,item_id,item_quantity,item)
+
+        else:
+            return self.update_cartforadd('LOG_PREFIX',cart,user_id,item_id, item_quantity, item)
+
+
+    def create_newcart(self,LOG_PREFIX,user_id,item_id,item_quantity,item):
+
+        new_cart = {
+            'userid': user_id,
+            'res_id': item['unique_id'],
+            'items': [{
+                'item_id': item_id,
+                'item_name': item['item_name'],
+                'item_description': item['item_description'],
+                'item_price': item['item_price'],
+                'item_category': item['item_category'],
+                'item_type': item['item_type'],
+                'quantity': item_quantity
+            }
+            ]
+        }
+        self.db_user._insert(new_cart)
+        return JsonResponse({'status':'SUCCESS','statuscode':'201','message': 'Cart created successfully'})
+
+    def update_cartforadd(self,LOG_PREFIX,cart,user_id,item_id, item_quantity, item):
+
+        cart_items = cart['items']
+        log.info("cart items %s" % cart_items)
+        item_exists = False
+        for cart_item in cart_items:
+            if cart_item['item_id'] == item_id:
+                item_exists = True
+                int_quantity = int(item_quantity)
+                log.info("quantity given %s" % int_quantity)
+                cart_quantity = int(cart_item['quantity'])
+                cart_quantity += int_quantity
+                item_p_add = int(item['item_price']) * cart_quantity
+                cart_item['quantity'] = str(cart_quantity)
+                cart_item['item_price'] = str(item_p_add)
+                log.info("quantity given %s" % cart_item['quantity'])
+                log.info("price addition %s" % cart_item['item_price'])
+
+        if not item_exists:
+            new_item = {
+                    'item_id': item_id,
+                    'item_name': item['item_name'],
+                    'item_description': item['item_description'],
+                    'item_price': item['item_price'],
+                    'item_category': item['item_category'],
+                    'item_type': item['item_type'],
+                    'quantity': item_quantity
+                }
+            cart_items.append(new_item)
+
+        self.db_user._update({'userid': user_id}, {'items': cart_items}, upsert=None, multi_ops=None)
+        return JsonResponse({'status': 'SUCCESS', 'statuscode': '202', 'mssg': 'cart updated successfully'})
+
+
+
+
+    def sub_from_cart(self, LOG_PREFIX, cart,user_id, item, item_id, item_quantity):
+
+        if not cart:
+            return JsonResponse({'status':'FAILURE','statuscode':'408','msg':'Cart is not there for reduction'})
+
+        cart_items = cart['items']
+        log.info("cart items %s" % cart_items)
+        item_exists = False
+        for cart_item in cart_items:
+            if cart_item['item_id'] == item_id:
+                item_exists = True
+                int_quantity = int(item_quantity)
+                log.info("quantity given %s" % int_quantity)
+                cart_quantity = int(cart_item['quantity'])
+                cart_quantity -= int_quantity
+                item_p_sub = int(item['item_price']) * cart_quantity
+                cart_item['quantity'] = str(cart_quantity)
+                cart_item['item_price'] = str(item_p_sub)
+                log.info("quantity remaining %s" % cart_item['quantity'])
+                log.info("price subtraction %s" % cart_item['item_price'])
+                if cart_item['quantity'] <= '0':
+                    cart_items.remove(cart_item)
+
+        if not cart_items:
+            self.db_user._delete({'userid': user_id}, multiple=None)
+            return JsonResponse({'status':'SUCCESS','statuscode':'203','mssg': 'cart deleted successfully'})
+
+        self.db_user._update({'userid': user_id}, {'items': cart_items}, upsert=None, multi_ops=None)
+        return JsonResponse({'status':'SUCCESS','statuscode':'202','mssg': 'cart updated successfully'})
 
 
 

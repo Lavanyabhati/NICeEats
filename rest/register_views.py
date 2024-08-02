@@ -412,6 +412,20 @@ class Menu:
             logging.error(f'{LOG_PREFIX}, "Result":"Failure", "Reason":"{e}"')
             return False
 
+    def _detail_item(self, LOG_PREFIX, item_id):
+        try:
+            filter_data = {
+                'item_id': item_id
+            }
+
+            item_detail = self.db_res_menu._find_one(filter=filter_data)
+
+            return item_detail
+
+        except Exception as e:
+            logging.error(f'{LOG_PREFIX}, "Result":"Failure", "Reason":"{e}"')
+            return False
+
     def _rate_item(self, LOG_PREFIX, data):
         try:
             item_id = data.get('item_id')
