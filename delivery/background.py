@@ -286,6 +286,7 @@ class Agent:
 
             filter_data = {
                 'unique_id': unique_id
+                # 'order_id'
             }
             document = {
                 'order_status': order_status
@@ -310,8 +311,12 @@ class Agent:
                 'unique_id': unique_id
             }
             update_data = {
-                'agent_location_latitude': agent_location_latitude,
-                'agent_location_longitude': agent_location_longitude
+                # 'agent_location_latitude': agent_location_latitude,
+                # 'agent_location_longitude': agent_location_longitude,
+                'location': {
+                    'type': 'Point',
+                    'coordinates': [float(agent_location_longitude), float(agent_location_latitude)]
+                }
             }
             update_agent_status = self.db_agent_profile._update(filter_q=filter_data, update_data=update_data)
 

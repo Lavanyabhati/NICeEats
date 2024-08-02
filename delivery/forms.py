@@ -146,7 +146,7 @@ class UpdateOrderStatusForm(forms.Form):
                                      required=True, label="Agent Status")
 
 
-class UpdateAgentLocation(forms.Form):
+class UpdateAgentLocationForm(forms.Form):
     agent_location_latitude = forms.FloatField(required=True)
     agent_location_longitude = forms.FloatField(required=True)
 

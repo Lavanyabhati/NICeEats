@@ -277,7 +277,6 @@ def delivery_agent_location(request, *args, **kwargs):
 @require_http_methods(["POST"])
 @verify_auth_token
 def update_order_status(request, *args, **kwargs):
-
     cls_register = Agent()
     EVENT = "UpdateOrderStatus"
     IP = client_ip(request)
@@ -309,6 +308,45 @@ def update_order_status(request, *args, **kwargs):
     except Exception as e:
         print(f"Exception in update_session(). Reason: {e}")
         return JsonResponse({"status": "FAILURE", "statuscode": 500, "msg": "Internal Server Error!"})
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+@verify_auth_token
+def update_order_status(request, *args, **kwargs):
+    cls_register = Agent()
+    EVENT = "UpdateAgentLocation"
+    IP = client_ip(request)
+    LOG_PREFIX = f'"EventName":"{EVENT}", "IP":"{IP}"'
+    try:
+        decoded_body = json.loads((request.body).decode())
+        form = UpdateAgentLocationForm(decoded_body)
+        if not form.is_valid():
+            return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": form.errors})
+
+        log.info("KWARGS in update_agent_location : %s" % kwargs)
+        unique_id = kwargs.get('unique_id')
+
+        if not unique_id:
+            return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": "Unique ID is required"})
+
+        update_data = {
+            'unique_id': unique_id,
+            'agent_location_latitude': decoded_body.get('agent_location_latitude'),
+            'agent_location_longitude': decoded_body.get('agent_location_longitude')
+        }
+        update_agent_status = cls_register._update_agent_location(LOG_PREFIX, data=update_data)
+        log.info("AGENT LOCATION UPDATE :%s" % update_agent_status)
+        if update_agent_status:
+            return JsonResponse({"status": "SUCCESS", "statuscode": 200, "msg": "Agent status updated successfully!"})
+        else:
+            return JsonResponse({"status": "FAILURE", "statuscode": 500, "msg": "Failed to update agent status!"})
+
+    except Exception as e:
+        print(f"Exception in update_session(). Reason: {e}")
+        return JsonResponse({"status": "FAILURE", "statuscode": 500, "msg": "Internal Server Error!"})
+
+
 
 
 
