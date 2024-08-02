@@ -19,7 +19,7 @@ RATING_INCREMENT = 1
 
 
 ############################################ Logging Conf Start ############################################
-LOG_FILE_PATH = 'C:/Users/lavan/PythonProjects/NICeEats/niceeats.log'
+LOG_FILE_PATH = 'C:/Users/biomi/PycharmProjects/NICeEats/niceeats.log'
 log = logging.getLogger('')
 info_handler = logging.FileHandler(LOG_FILE_PATH, encoding='utf-8')
 formatter = logging.Formatter('{"Time":"%(asctime)s", "Level":"%(levelname)s", "File":"%(filename)s", "Line":"%(lineno)d", %(message)s}')
@@ -40,6 +40,7 @@ COLLECTION_PROFILE_RESTAURANT = 'restaurant'
 COLLECTION_PROFILE_RESTAURANT_OWNER = 'restaurant_owner'
 COLLECTION_RES_MENU = 'Menu'
 COLLECTION_RATING = 'item_ratings'
+COLLECTION_CART = 'Carts'
 
 
 

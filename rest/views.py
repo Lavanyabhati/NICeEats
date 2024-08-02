@@ -33,7 +33,7 @@ def verify_auth_token(func):
                 return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": f"Token validation failed: {error_msg}"})
 
             token_scope = token_data.get('scope')
-            if token_scope != TOKEN_SCOPE_RESTAURANT:
+            if token_scope not in (TOKEN_SCOPE_USER, TOKEN_SCOPE_RESTAURANT):
                 return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": "Invalid Scope!"})
 
             mobile_number = token_data.get('contact')
@@ -84,7 +84,7 @@ def register_res(request, *args, **kwargs):
                 'subcategory': decoded_body.get('subcategory')
         }
 
-        insert_res = cls_register._add(LOG_PREFIX, data=data_dict)
+        insert_res = cls_register._aduid(LOG_PREFIX, data=data_dict)
         log.info("INSERT RES :%s" %insert_res)
 
         if insert_res:

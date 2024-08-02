@@ -17,6 +17,32 @@ class OwnerForm(forms.Form):
     age = forms.IntegerField()
 
 
+class ItemForm(forms.Form):
+    food_item_id = forms.IntegerField()
+    name = forms.CharField(max_length=255)
+    description = forms.CharField(max_length=255)
+    price = forms.FloatField()
+    quantity = forms.IntegerField()
+
+
+class CartForm(forms.Form):
+    item_id = forms.CharField(required=True)
+    item_quantity = forms.CharField(required=True)
+    ACTION_CHOICES = [
+        ('add', 'Add'),
+        ('remove', 'Remove'),
+    ]
+    action = forms.ChoiceField(label='Action', choices=ACTION_CHOICES, required=True)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        item_quantity = cleaned_data.get('item_quantity')
+
+        if item_quantity != '1':
+            raise forms.ValidationError("Quantity should be equal to 1")
+
+
+
 #
 # class ProfileForm(forms.Form):
 #     class Meta:

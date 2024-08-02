@@ -4,7 +4,7 @@ from Auth import views as authviews
 
 urlpatterns = [
     path('otp/', authviews.otp),
-    path('product/', views.product_list),
-    path('orders/', views.order_list),
-    path('cart/', views.cart_list)
+  #  path('product/', views.product_list),
+   # path('orders/', views.order_list),
+    path('cart/', views.create_cart)
 ]
