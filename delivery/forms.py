@@ -48,8 +48,23 @@ class UpdateDeliveryAgentForm(forms.Form):
     verification_type = forms.CharField(max_length=100, required=True, label="Verification Type")
     vehicle_type = forms.CharField(max_length=100, required=True, label="Verification Type")
     vehicle_reg_no = forms.CharField(max_length=100, required=True, label="Vehicle Registration Number")
+    agent_location_latitude = forms.FloatField(required=True)
+    agent_location_longitude = forms.FloatField(required=True)
     agent_status = forms.ChoiceField(choices=[('online', 'Online'), ('engaged', 'Engaged'), ('offline', 'Offline')],
                                      required=True, label="Agent Status")
+
+    def clean(self):
+        cleaned_data = super().clean()
+        latitude = cleaned_data.get('agent_location_latitude')
+        longitude = cleaned_data.get('agent_location_longitude')
+
+        if (float(latitude) < -90 or float(latitude) > 90):
+            self.add_error('agent_location_latitude', f"Latitude must be between -90 and 90 degrees.")
+
+        if (float(longitude) < -90 or float(longitude) > 90):
+            self.add_error('agent_location_longitude', f"Longitude must be between -180 and 180 degrees.")
+
+        return self.cleaned_data
 
 
 class AgentSessionForm(forms.Form):
@@ -67,10 +82,11 @@ class AgentSessionForm(forms.Form):
             ('online', 'Online'),
     ]
     order_status = forms.ChoiceField(choices=SESSION_STATUS_CHOICES, label='Order Status', required=True)
-    agent_location_latitude = forms.FloatField(required=True)
-    agent_location_longitude = forms.FloatField(required=True)
+    # agent_location_latitude = forms.FloatField(required=True)
+    # agent_location_longitude = forms.FloatField(required=True)
     payment_mode = forms.ChoiceField(choices=PAYMENT_MODE_CHOICES, label='Payment Mode', required=True)
     payment_amount = forms.IntegerField(label="Payment Amount", required=True)
+    # order_id =
 
     def clean(self):
         cleaned_data = super().clean()
@@ -121,8 +137,32 @@ class UpdateAgentSessionForm(forms.Form):
 
 
 class AgentProfileStatusForm(forms.Form):
-    agent_status = forms.ChoiceField(choices=[('online', 'Online'),('offline', 'Offline')],
+    agent_status = forms.ChoiceField(choices=[('online', 'Online'), ('offline', 'Offline')],
                                      required=True, label="Agent Status")
+
+
+class UpdateOrderStatusForm(forms.Form):
+    order_status = forms.ChoiceField(choices=[('accepted', 'Accepted'), ('picked_up', 'Picked Up'), ('arriving', 'Arriving'), ('reached_location', 'Reached Location'), ('delivered', 'Delivered')],
+                                     required=True, label="Agent Status")
+
+
+class UpdateAgentLocation(forms.Form):
+    agent_location_latitude = forms.FloatField(required=True)
+    agent_location_longitude = forms.FloatField(required=True)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        latitude = cleaned_data.get('agent_location_latitude')
+        longitude = cleaned_data.get('agent_location_longitude')
+
+        if (float(latitude) < -90 or float(latitude) > 90):
+            self.add_error('agent_location_latitude', f"Latitude must be between -90 and 90 degrees.")
+
+        if (float(longitude) < -90 or float(longitude) > 90):
+            self.add_error('agent_location_longitude', f"Longitude must be between -180 and 180 degrees.")
+
+        return self.cleaned_data
+
 
 
 

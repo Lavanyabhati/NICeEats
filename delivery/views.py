@@ -106,6 +106,8 @@ def update_agent(request, *args, **kwargs):
             'verification_type': decoded_body.get('verification_type', ''),
             'vehicle_type': decoded_body.get('vehicle_type', ''),
             'vehicle_reg_no': decoded_body.get('vehicle_reg_no', ''),
+            'agent_location_latitude': decoded_body.get('agent_location_latitude', ''),
+            'agent_location_longitude': decoded_body.get('agent_location_longitude', ''),
             'agent_status': decoded_body.get('agent_status', '')
         }
 
@@ -145,10 +147,10 @@ def agent_session(request, *args, **kwargs):
         data_dict = {
             'unique_id': unique_id,
             'session_start_time': datetime.now(),
-            'session_end_time': datetime.now(),
             'order_status': decoded_body.get('order_status'),
-            'agent_location_latitude': decoded_body.get('agent_location_latitude'),
-            'agent_location_longitude': decoded_body.get('agent_location_longitude'),
+            'location': decoded_body.get('location'),
+            # 'agent_location_latitude': decoded_body.get('agent_location_latitude'),
+            # 'agent_location_longitude': decoded_body.get('agent_location_longitude'),
             'payment_mode': decoded_body.get('payment_mode'),
             'payment_amount': decoded_body.get('payment_amount')
         }
@@ -170,7 +172,7 @@ def agent_session(request, *args, **kwargs):
 @verify_auth_token
 def update_session(request, *args, **kwargs):
     cls_register = Agent()
-    EVENT = "UpdateAgentProfile"
+    EVENT = "UpdateAgentSession"
     IP = client_ip(request)
     LOG_PREFIX = f'"EventName":"{EVENT}", "IP":"{IP}"'
     try:
@@ -205,3 +207,109 @@ def update_session(request, *args, **kwargs):
     except Exception as e:
         print(f"Exception in update_session(). Reason: {e}")
         return JsonResponse({"status": "FAILURE", "statuscode": 500, "msg": "Internal Server Error!"})
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+@verify_auth_token
+def profile_status(request, *args, **kwargs):
+    cls_register = Agent()
+    EVENT = "UpdateAgentProfileStatus"
+    IP = client_ip(request)
+    LOG_PREFIX = f'"EventName":"{EVENT}", "IP":"{IP}"'
+    try:
+        decoded_body = json.loads((request.body).decode())
+        form = AgentProfileStatusForm(decoded_body)
+        if not form.is_valid():
+            return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": form.errors})
+
+        log.info("KWARGS in update_agent_status : %s" % kwargs)
+        unique_id = kwargs.get('unique_id')
+
+        if not unique_id:
+            return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": "Unique ID is required"})
+
+        update_data = {
+            'unique_id': unique_id,
+            'agent_status': decoded_body.get('agent_status')
+        }
+
+        update_profile_status = cls_register._agent_profile_status(LOG_PREFIX, data=update_data)
+        log.info("AGENT PROFILE STATUS UPDATE :%s" % update_profile_status)
+        if update_profile_status:
+            return JsonResponse({"status": "SUCCESS", "statuscode": 200, "msg": "Agent status updated successfully!"})
+        else:
+            return JsonResponse({"status": "FAILURE", "statuscode": 500, "msg": "Failed to update agent status!"})
+
+    except Exception as e:
+        print(f"Exception in update_session(). Reason: {e}")
+        return JsonResponse({"status": "FAILURE", "statuscode": 500, "msg": "Internal Server Error!"})
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+@verify_auth_token
+def delivery_agent_location(request, *args, **kwargs):
+    cls_register = Agent()
+    EVENT = "GetAgentLocation"
+    IP = client_ip(request)
+    LOG_PREFIX = f'"EventName":"{EVENT}", "IP":"{IP}"'
+
+    try:
+        unique_id = kwargs.get('unique_id')
+
+        if not unique_id:
+            return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": "Unique ID is required"})
+
+        location_data = cls_register._agent_location(LOG_PREFIX, unique_id)
+
+        if location_data:
+            return JsonResponse({"status": "SUCCESS", "statuscode": 200, "data": location_data})
+        else:
+            return JsonResponse({"status": "FAILURE", "statuscode": 404, "msg": "Agent not found or not online"})
+
+    except Exception as e:
+        log.error(f'{LOG_PREFIX}, "Result":"Failure", "Reason":"{str(e)}"')
+        return JsonResponse({"status": "FAILURE", "statuscode": 500, "msg": "Internal Server Error"})
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+@verify_auth_token
+def update_order_status(request, *args, **kwargs):
+
+    cls_register = Agent()
+    EVENT = "UpdateOrderStatus"
+    IP = client_ip(request)
+    LOG_PREFIX = f'"EventName":"{EVENT}", "IP":"{IP}"'
+    try:
+        decoded_body = json.loads((request.body).decode())
+        form = UpdateOrderStatusForm(decoded_body)
+        if not form.is_valid():
+            return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": form.errors})
+
+        log.info("KWARGS in update_order_status : %s" % kwargs)
+        unique_id = kwargs.get('unique_id')
+
+        if not unique_id:
+            return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": "Unique ID is required"})
+
+        update_data = {
+            'unique_id': unique_id,
+            'order_status': decoded_body.get('order_status')
+        }
+
+        update_profile_status = cls_register._update_order_status(LOG_PREFIX, data=update_data)
+        log.info("AGENT PROFILE STATUS UPDATE :%s" % update_profile_status)
+        if update_profile_status:
+            return JsonResponse({"status": "SUCCESS", "statuscode": 200, "msg": "Agent status updated successfully!"})
+        else:
+            return JsonResponse({"status": "FAILURE", "statuscode": 500, "msg": "Failed to update agent status!"})
+
+    except Exception as e:
+        print(f"Exception in update_session(). Reason: {e}")
+        return JsonResponse({"status": "FAILURE", "statuscode": 500, "msg": "Internal Server Error!"})
+
+
+
+

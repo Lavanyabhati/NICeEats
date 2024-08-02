@@ -500,7 +500,6 @@ def delete_item(request, *args, **kwargs):
         if not item_id:
             return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": "Item ID is required!"})
 
-        # data = {'item_id': item_id}
         item_delete = cls_register._delete_item(LOG_PREFIX, item_id)
         log.info("ITEM DELETE :%s" %item_delete)
 

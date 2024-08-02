@@ -63,6 +63,8 @@ class Agent:
             verification_type = data.get('verification_type', '')
             vehicle_type = data.get('vehicle_type', '')
             vehicle_reg_no = data.get('vehicle_reg_no', '')
+            agent_location_latitude = data.get('agent_location_latitude', '')
+            agent_location_longitude = data.get('agent_location_longitude', '')
             agent_status = data.get('agent_status', '')
 
             filter_data = {
@@ -80,7 +82,12 @@ class Agent:
                 'verification_type': verification_type,
                 'vehicle_type': vehicle_type,
                 'vehicle_reg_no': vehicle_reg_no,
+                'location': {
+                    'type': 'Point',
+                    'coordinates': [float(agent_location_longitude), float(agent_location_latitude)]
+                },
                 'agent_status': agent_status,
+                'verification_status': 'APPROVED',
                 'created_at': datetime.now(),
                 'updated_at': datetime.now(),
             }
@@ -94,47 +101,51 @@ class Agent:
 
     def _update_delivery_agent(self, LOG_PREFIX, data):
         try:
-            mobile_number = data.get('mobile_number')
-            unique_id = data.get('unique_id')
+                mobile_number = data.get('mobile_number')
+                unique_id = data.get('unique_id')
 
-            name = data.get('name', '')
-            address = data.get('address', '')
-            email = data.get('email', '')
-            date_of_birth = data.get('date_of_birth', '')
-            gender = data.get('gender', '')
-            verification_id = data.get('verification_id', '')
-            verification_type = data.get('verification_type', '')
-            vehicle_type = data.get('vehicle_type', '')
-            vehicle_reg_no = data.get('vehicle_reg_no', '')
-            agent_status = data.get('agent_status', '')
+                name = data.get('name', '')
+                address = data.get('address', '')
+                email = data.get('email', '')
+                date_of_birth = data.get('date_of_birth', '')
+                gender = data.get('gender', '')
+                verification_id = data.get('verification_id', '')
+                verification_type = data.get('verification_type', '')
+                vehicle_type = data.get('vehicle_type', '')
+                vehicle_reg_no = data.get('vehicle_reg_no', '')
+                agent_location_latitude = data.get('agent_location_latitude', '')
+                agent_location_longitude = data.get('agent_location_longitude', '')
+                agent_status = data.get('agent_status', '')
 
-            filter_data = {
-                'mobile_number': mobile_number,
-                'unique_id': unique_id,
+                filter_data = {
+                    'mobile_number': mobile_number,
+                    'unique_id': unique_id,
+                }
+                update_data = {
+                    'name': name,
+                    'address': address,
+                    'email': email,
+                    'date_of_birth': date_of_birth,
+                    'gender': gender,
+                    'profile_type': 'AGENT',
+                    'verification_id': verification_id,
+                    'verification_type': verification_type,
+                    'vehicle_type': vehicle_type,
+                    'vehicle_reg_no': vehicle_reg_no,
+                    'location': {
+                        'type': 'Point',
+                        'coordinates': [float(agent_location_longitude), float(agent_location_latitude)]
+                    },
+                    'agent_status': agent_status,
+                    'created_at': datetime.now(),
+                    'updated_at': datetime.now(),
+                }
+                delivery_agent_update = self.db_agent_profile._update(filter_q=filter_data, update_data=update_data, upsert=True)
 
-            }
-            update_data = {
-                'name': name,
-                'address': address,
-                'email': email,
-                'date_of_birth': date_of_birth,
-                'gender': gender,
-                'profile_type': 'AGENT',
-                'verification_id': verification_id,
-                'verification_type': verification_type,
-                'vehicle_type': vehicle_type,
-                'vehicle_reg_no': vehicle_reg_no,
-                'agent_status': agent_status,
-                'created_at': datetime.now(),
-                'updated_at': datetime.now(),
-            }
-
-            delivery_agent_update = self.db_agent_profile._update(filter_q=filter_data, update_data=update_data, upsert=True)
-
-            if delivery_agent_update.modified_count > 0:
-                return True
-            else:
-                return False
+                if delivery_agent_update.modified_count > 0:
+                    return True
+                else:
+                    return False
 
         except Exception as e:
             log.error(f'{LOG_PREFIX}, "Result":"Failure", "Reason":"{e}"')
@@ -145,10 +156,18 @@ class Agent:
             unique_id = data.get('unique_id')
             # order_id = data.get('order_id')
             order_status = data.get('order_status')
-            agent_location_latitude = data.get('agent_location_latitude')
-            agent_location_longitude = data.get('agent_location_longitude')
+            # agent_location_latitude = data.get('agent_location_latitude')
+            # agent_location_longitude = data.get('agent_location_longitude')
             payment_mode = data.get('payment_mode')
             payment_amount = data.get('payment_amount')
+
+            agent_profile = self._agent_location(LOG_PREFIX, unique_id)
+            if not agent_profile:
+                log.error(f'{LOG_PREFIX}, "Result":"Failure", "Reason":"Agent profile not found or not online!"')
+                return False
+
+            agent_location_latitude = agent_profile.get('agent_location_latitude')
+            agent_location_longitude = agent_profile.get('agent_location_longitude')
 
             if agent_location_latitude is None or agent_location_longitude is None:
                 log.error(f'{LOG_PREFIX}, "Result":"Failure", "Reason":"Latitude and Longitude are required!"')
@@ -158,7 +177,6 @@ class Agent:
                 'unique_id': unique_id,
                 # 'order_id': order_id,
                 'session_start_time': datetime.now(),
-                'session_end_time': datetime.now(),
                 'order_status': order_status,
                 'location': {
                     'type': 'Point',
@@ -182,6 +200,7 @@ class Agent:
             agent_location_longitude = data.get('agent_location_longitude')
             payment_mode = data.get('payment_mode')
             payment_amount = data.get('payment_amount')
+            session_end_time = datetime.now()
 
             if agent_location_latitude is None or agent_location_longitude is None:
                 log.error(f'{LOG_PREFIX}, "Result":"Failure", "Reason":"Latitude and Longitude are required!"')
@@ -189,7 +208,6 @@ class Agent:
             filter_data={
                 'unique_id': unique_id,
                 # 'order_id': order_id,
-
             }
             session_document = {
                 'order_status': order_status,
@@ -199,6 +217,7 @@ class Agent:
                 },
                 'payment_mode': payment_mode,
                 'payment_amount': payment_amount,
+                'session_end_time': session_end_time
             }
             if order_status == "accepted":
                 session_document['session_start_time'] = datetime.now()
@@ -216,3 +235,92 @@ class Agent:
         except Exception as e:
             log.error(f'{LOG_PREFIX}, "Result":"Failure", "Reason":"{e}"')
             return False
+
+    def _agent_profile_status(self, LOG_PREFIX, data):
+        try:
+            unique_id = data.get('unique_id')
+            agent_status = data.get('agent_status')
+
+            filter_data = {
+                'unique_id': unique_id
+            }
+            document = {
+                'agent_status': agent_status
+            }
+
+            update_profile_status = self.db_agent_profile._update(filter_q=filter_data, update_data=document)
+            if update_profile_status.modified_count > 0:
+                return True
+            else:
+                return False
+        except Exception as e:
+            log.error(f'{LOG_PREFIX}, "Result":"Failure", "Reason":"{e}"')
+            return False
+
+    def _agent_location(self,LOG_PREFIX, unique_id):
+        try:
+            filter_data = {'unique_id': unique_id}
+            agent_profile = self.db_agent_profile._find_one(filter=filter_data)
+
+            if not agent_profile:
+                log.info(f'{LOG_PREFIX}, "Agent profile not found for unique_id: {unique_id}"')
+                return None
+
+            if agent_profile.get('agent_status') == 'online':
+                return {
+                    'unique_id': agent_profile.get('unique_id'),
+                    'location': agent_profile.get('location')
+                }
+            else:
+                log.info(f'{LOG_PREFIX}, "Agent is not online for unique_id: {unique_id}"')
+                return None
+
+        except Exception as e:
+            log.error(f'{LOG_PREFIX}, "Result":"Failure", "Reason":"{e}"')
+            return None
+
+    def _update_order_status(self, LOG_PREFIX, data):
+        try:
+            unique_id = data.get('unique_id')
+            order_status = data.get('order_status')
+
+            filter_data = {
+                'unique_id': unique_id
+            }
+            document = {
+                'order_status': order_status
+            }
+
+            update_order_status = self.db_agent_session._update(filter_q=filter_data, update_data=document)
+            if update_order_status.modified_count > 0:
+                return True
+            else:
+                return False
+        except Exception as e:
+            log.error(f'{LOG_PREFIX}, "Result":"Failure", "Reason":"{e}"')
+            return False
+
+    def _update_agent_location(self, LOG_PREFIX, data):
+        try:
+            unique_id = data.get('unique_id')
+            agent_location_latitude = data.get('agent_location_latitude')
+            agent_location_longitude = data.get('agent_location_longitude')
+
+            filter_data = {
+                'unique_id': unique_id
+            }
+            update_data = {
+                'agent_location_latitude': agent_location_latitude,
+                'agent_location_longitude': agent_location_longitude
+            }
+            update_agent_status = self.db_agent_profile._update(filter_q=filter_data, update_data=update_data)
+
+            if update_agent_status.modified_count > 0:
+                return True
+            else:
+                return False
+
+        except Exception as e:
+            log.error(f'{LOG_PREFIX}, "Result":"Failure", "Reason":"{e}"')
+            return {"status": "FAILURE", "message": "Error updating owner details"}
+

@@ -72,7 +72,6 @@ def otp(request):
             otp_code = decoded_body.get('otp')
             v_status, v_response = otp_handler.verify(LOG_PREFIX, mobile_number, otp_code,user_type)
             if v_status:
-                # unique_id = ''.join(random.choices('0123456789ABCDEF', k=16))
                 unique_id = ''.join(random.choices('0123456789ABCDEF', k=14))  # Generate 14-bit random ID
                 unique_id = prefix + unique_id
                 profile_status, profile_data = cls_register._find(LOG_PREFIX, mobile_number)

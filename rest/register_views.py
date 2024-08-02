@@ -110,6 +110,7 @@ class Restaurant:
                 'profile_type': 'OWNER',
                 'verification_id': verification_id,
                 'verification_type': verification_type,
+                'verification_status': 'APPROVED',
                 'created_at': datetime.now(),
                 'updated_at': datetime.now(),
             }
