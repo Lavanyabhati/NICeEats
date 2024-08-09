@@ -9,6 +9,7 @@ from geopy.distance import geodesic
 import math
 from functools import wraps
 from helpers.jwthelper import JWToken
+from datetime import timedelta
 import random
 
 
@@ -139,26 +140,48 @@ def agent_session(request, *args, **kwargs):
             return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": form.errors})
 
         unique_id = kwargs.get('unique_id')
+        order_id = decoded_body.get('order_id')
         log.info("UNIQUE ID :%s" % unique_id)
 
         if not unique_id:
             return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": "Unique ID is required!"})
 
+        if not order_id:
+            return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": "Order ID is required!"})
+
+        session_id = 'S_' + ''.join(random.choices('0123456789ABCDEF', k=14))
         data_dict = {
             'unique_id': unique_id,
-            'session_start_time': datetime.now(),
+            'session_id': session_id,
+            'order_id': order_id,
             'order_status': decoded_body.get('order_status'),
-            'location': decoded_body.get('location'),
-            # 'agent_location_latitude': decoded_body.get('agent_location_latitude'),
-            # 'agent_location_longitude': decoded_body.get('agent_location_longitude'),
             'payment_mode': decoded_body.get('payment_mode'),
-            'payment_amount': decoded_body.get('payment_amount')
+            'payment_amount': decoded_body.get('payment_amount'),
+            'pickup_location_latitude': decoded_body.get('pickup_location_latitude'),
+            'pickup_location_longitude': decoded_body.get('pickup_location_longitude'),
+            'pickup_location_name': decoded_body.get('pickup_location_name'),
+            'delivery_location_latitude': decoded_body.get('delivery_location_latitude'),
+            'delivery_location_longitude': decoded_body.get('delivery_location_longitude'),
+            'delivery_location_name': decoded_body.get('delivery_location_name'),
         }
 
         insert_agent_session = cls_session._add_agent_session(LOG_PREFIX, data=data_dict)
-
+        log.info("INSERT AGENT SESSION :%s" % insert_agent_session)
         if insert_agent_session:
-            return JsonResponse({"status": "SUCCESS", "statuscode": 200, "msg": "Agent's session created successfully!"})
+            filter_data = {
+                'order_id': order_id,
+            }
+
+            update_data = {
+                'order_status': decoded_body.get('order_status')
+            }
+            order_update_result = cls_session.db_order_collection._update(filter_q=filter_data, update_data=update_data)
+
+            if order_update_result.modified_count > 0:
+                log.info("ORDER UPDATE :%s" % order_update_result)
+                return JsonResponse({"status": "SUCCESS", "statuscode": 200, "msg": "Agent's session created and order updated successfully!"})
+            else:
+                return JsonResponse({"status": "FAILURE", "statuscode": 500, "msg": "Agent's session created, but failed to update the order!"})
         else:
             return JsonResponse({"status": "FAILURE", "statuscode": 500, "msg": "Failed to create agent's session!"})
 
@@ -284,36 +307,43 @@ def update_order_status(request, *args, **kwargs):
     try:
         decoded_body = json.loads((request.body).decode())
         form = UpdateOrderStatusForm(decoded_body)
+
         if not form.is_valid():
             return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": form.errors})
 
         log.info("KWARGS in update_order_status : %s" % kwargs)
         unique_id = kwargs.get('unique_id')
+        order_id = decoded_body.get('order_id')
 
         if not unique_id:
             return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": "Unique ID is required"})
 
+        if not order_id:
+            return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": "Order ID is required"})
+
         update_data = {
             'unique_id': unique_id,
+            'order_id': order_id,
             'order_status': decoded_body.get('order_status')
         }
 
-        update_profile_status = cls_register._update_order_status(LOG_PREFIX, data=update_data)
-        log.info("AGENT PROFILE STATUS UPDATE :%s" % update_profile_status)
-        if update_profile_status:
-            return JsonResponse({"status": "SUCCESS", "statuscode": 200, "msg": "Agent status updated successfully!"})
+        order_status_update = cls_register._update_order_status(LOG_PREFIX, data=update_data)
+        log.info("ORDER STATUS UPDATE: %s" % order_status_update)
+
+        if order_status_update:
+            return JsonResponse({"status": "SUCCESS", "statuscode": 200, "msg": "Order status updated successfully!"})
         else:
-            return JsonResponse({"status": "FAILURE", "statuscode": 500, "msg": "Failed to update agent status!"})
+            return JsonResponse({"status": "FAILURE", "statuscode": 500, "msg": "Failed to update order status!"})
 
     except Exception as e:
-        print(f"Exception in update_session(). Reason: {e}")
+        log.error(f'{LOG_PREFIX}, "Result":"Failure", "Reason":"{e}"')
         return JsonResponse({"status": "FAILURE", "statuscode": 500, "msg": "Internal Server Error!"})
 
 
 @csrf_exempt
 @require_http_methods(["POST"])
 @verify_auth_token
-def update_order_status(request, *args, **kwargs):
+def update_agent_location(request, *args, **kwargs):
     cls_register = Agent()
     EVENT = "UpdateAgentLocation"
     IP = client_ip(request)
@@ -335,19 +365,77 @@ def update_order_status(request, *args, **kwargs):
             'agent_location_latitude': decoded_body.get('agent_location_latitude'),
             'agent_location_longitude': decoded_body.get('agent_location_longitude')
         }
-        update_agent_status = cls_register._update_agent_location(LOG_PREFIX, data=update_data)
+        update_agent_status = cls_register._update_location(LOG_PREFIX, data=update_data)
         log.info("AGENT LOCATION UPDATE :%s" % update_agent_status)
         if update_agent_status:
-            return JsonResponse({"status": "SUCCESS", "statuscode": 200, "msg": "Agent status updated successfully!"})
+            return JsonResponse({"status": "SUCCESS", "statuscode": 200, "msg": "Agent Location updated successfully!"})
         else:
-            return JsonResponse({"status": "FAILURE", "statuscode": 500, "msg": "Failed to update agent status!"})
+            return JsonResponse({"status": "FAILURE", "statuscode": 500, "msg": "Failed to update agent location!"})
 
     except Exception as e:
         print(f"Exception in update_session(). Reason: {e}")
         return JsonResponse({"status": "FAILURE", "statuscode": 500, "msg": "Internal Server Error!"})
 
 
+@csrf_exempt
+@require_http_methods(["POST"])
+@verify_auth_token
+def delete_agent(request, *args, **kwargs):
+    cls_agent = Agent()
+    EVENT = "DeleteAgentProfile"
+    IP = client_ip(request)
+    LOG_PREFIX = f'"EventName":"{EVENT}", "IP":"{IP}"'
+    try:
+        unique_id = kwargs.get('unique_id')
+        log.info("UNIQUE ID :%s" % unique_id)
+        if not unique_id:
+            return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": "Unique ID is required!"})
+
+        data = {'unique_id': unique_id}
+
+        agent_profile_delete = cls_agent._delete_agent_profile(LOG_PREFIX, unique_id)
+        log.info("RES DELETE :%s" %agent_profile_delete)
+
+        if agent_profile_delete:
+            return JsonResponse({"status": "SUCCESS", "statuscode": 200, "msg": "Agent Profile deleted successfully!"})
+        else:
+            return JsonResponse({"status": "FAILURE", "statuscode": 500, "msg": "Failed to delete agent profile!"})
+    except Exception as e:
+        log.error(f'{LOG_PREFIX}, "Result":"Failure", "Reason":"{e}"')
+        return JsonResponse({"status": "FAILURE", "statuscode": 500, "msg": "Internal Server Error!"})
 
 
+@csrf_exempt
+@require_http_methods(["POST"])
+@verify_auth_token
+def sessions_list(request, *args, **kwargs):
+    cls_agent = Agent()
+    EVENT = "GetSessionsList"
+    IP = client_ip(request)
+    LOG_PREFIX = f'"EventName":"{EVENT}", "IP":"{IP}"'
 
+    try:
+        decoded_body = json.loads(request.body.decode())
+        unique_id = kwargs.get('unique_id')
+        days_filter = decoded_body.get('days_filter', 7)
 
+        if not unique_id:
+            return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": "Unique ID is required!"})
+
+        if days_filter not in [7, 15, 30]:
+            return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": "Invalid days filter value!"})
+
+        data = {
+            'unique_id': unique_id,
+            'days_filter': days_filter
+        }
+
+        session_list = cls_agent._list_sessions(LOG_PREFIX, data)
+        if session_list is False:
+            return JsonResponse({"status": "FAILURE", "statuscode": 500, "msg": "Failed to fetch sessions!"})
+
+        return JsonResponse({"status": "SUCCESS", "statuscode": 200, "sessions": list(session_list)})
+
+    except Exception as e:
+        log.error(f'{LOG_PREFIX}, "Result":"Failure", "Reason":"{e}"')
+        return JsonResponse({"status": "FAILURE", "statuscode": 500, "msg": "Internal Server Error!"})

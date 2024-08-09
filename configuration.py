@@ -15,8 +15,8 @@ MAX_TRAVEL_TIME_PER_KM = 10
 FOOD_PREP_TIME = 20
 RATING_INCREMENT = 1
 
-############################################ Static Values End ############################################
 
+############################################ Static Values End ############################################
 
 
 ############################################ Logging Conf Start ############################################
@@ -37,6 +37,7 @@ DB_NAME = "NICeEats"
 # DB_NAME = "Restaurant_database"
 COLLECTION_OTP = 'OTP'
 COLLECTION_PROFILE_USER = 'UserProfile'
+COLLECTION_CART = 'Cart'
 COLLECTION_PROFILE_RESTAURANT = 'Restaurant'
 COLLECTION_PROFILE_RESTAURANT_OWNER = 'RestaurantOwnerProfile'
 COLLECTION_RESTAURANT_RECENT_ORDERS = 'RestaurantOrders'
@@ -44,7 +45,7 @@ COLLECTION_RES_MENU = 'Menu'
 COLLECTION_RATING = 'MenuItemRating'
 COLLECTION_PROFILE_AGENT = 'DeliveryAgentProfile'
 COLLECTION_SESSION_AGENT = 'DeliveryAgentSession'
-
+COLLECTION_ORDERS = 'UserOrder'
 
 
 def db_conn():
@@ -52,6 +53,7 @@ def db_conn():
     db = client[DB_NAME]
     return db
 ############################################ Database Connection End ############################################
+
 
 def client_ip(request):
     try:

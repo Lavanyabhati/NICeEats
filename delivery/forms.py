@@ -82,24 +82,16 @@ class AgentSessionForm(forms.Form):
             ('online', 'Online'),
     ]
     order_status = forms.ChoiceField(choices=SESSION_STATUS_CHOICES, label='Order Status', required=True)
-    # agent_location_latitude = forms.FloatField(required=True)
-    # agent_location_longitude = forms.FloatField(required=True)
     payment_mode = forms.ChoiceField(choices=PAYMENT_MODE_CHOICES, label='Payment Mode', required=True)
     payment_amount = forms.IntegerField(label="Payment Amount", required=True)
     # order_id =
-
-    def clean(self):
-        cleaned_data = super().clean()
-        latitude = cleaned_data.get('agent_location_latitude')
-        longitude = cleaned_data.get('agent_location_longitude')
-
-        if (float(latitude) < -90 or float(latitude) > 90):
-            self.add_error('agent_location_latitude', f"Latitude must be between -90 and 90 degrees.")
-
-        if (float(longitude) < -90 or float(longitude) > 90):
-            self.add_error('agent_location_longitude', f"Longitude must be between -180 and 180 degrees.")
-
-        return self.cleaned_data
+    pickup_location_name = forms.CharField(label='Pickup Location Name', max_length=255, required=True)
+    pickup_location_latitude = forms.FloatField(label='Pickup Location Latitude', required=True)
+    pickup_location_longitude = forms.FloatField(label='Pickup Location Longitude', required=True)
+    delivery_location_name = forms.CharField(label='Delivery Location Name', max_length=255, required=True)
+    delivery_location_latitude = forms.FloatField(label='Delivery Location Latitude', required=True)
+    delivery_location_longitude = forms.FloatField(label='Delivery Location Longitude', required=True)
+    # user_contact_number = forms.CharField(label='User Contact Number', max_length=15, required=True)
 
 
 class UpdateAgentSessionForm(forms.Form):

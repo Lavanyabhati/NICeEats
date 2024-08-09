@@ -370,7 +370,7 @@ def add_item(request, *args, **kwargs):
             if not form.is_valid():
                 return JsonResponse({"status": "FAILURE", "statuscode": 400, "msg": form.errors})
 
-            item_id = ''.join(random.choices('0123456789ABCDEF', k=16))
+            item_id = 'I_' + ''.join(random.choices('0123456789ABCDEF', k=16))
             data_dict = {
                 'unique_id': unique_id,
                 'item_id': item_id,
