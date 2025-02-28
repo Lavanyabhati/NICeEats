@@ -146,7 +146,6 @@ class Restaurant:
                 'date_of_birth': date_of_birth,
                 'gender': gender,
                 'profile_type': 'OWNER',
-                # 'account_status': 1,
                 'verification_id': verification_id,
                 'verification_type': verification_type,
                 'updated_at': datetime.now(),
